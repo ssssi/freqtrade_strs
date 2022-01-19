@@ -1,2 +1,2 @@
 # freqtrade-strs
-my live strategy
+some i think is good strategies
