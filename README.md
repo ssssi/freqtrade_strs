@@ -1,2 +1,2 @@
-# freqtrade-stuff
+# freqtrade-strs
 my live strategy
