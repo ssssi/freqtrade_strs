@@ -93,8 +93,8 @@
   },
   "telegram": {
     "enabled": true,
-    "token": "2111676131:AAEom__I40zQ9-Vqt1WaSRXMyxu_iR4xrZc",
-    "chat_id": "1748893905",
+    "token": "",
+    "chat_id": "",
     "keyboard": [
       [
         "/daily",
