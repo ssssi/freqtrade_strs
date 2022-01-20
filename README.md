@@ -1,4 +1,6 @@
 # freqtrade-strs
-some i think is good strategies
-i can only user gateio, so many str all test in gateio.
-i will update gateio blacklist
+Some strategies collect.
+
+I can only use gateio, so my all test in gateio.
+
+I will update the Gateio blacklist regularly.
