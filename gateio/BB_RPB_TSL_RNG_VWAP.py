@@ -433,22 +433,23 @@ class BB_RPB_TSL_RNG_VWAP(IStrategy):
                 (dataframe['rsi'] < self.buy_rsi.value)
             )
 
-        is_ewo_2 = (
-                (dataframe['rsi_fast'] < self.buy_rsi_fast.value) &
-                (dataframe['close'] < dataframe['ema_8'] * self.buy_ema_low_2.value) &
-                (dataframe['EWO'] > self.buy_ewo_high.value) &
-                (dataframe['close'] < dataframe['ema_16'] * self.buy_ema_high_2.value) &
-                (dataframe['rsi'] < self.buy_rsi.value)
-            )
+        # disabled ewo2 and cofi buy condition
+        # is_ewo_2 = (
+        #         (dataframe['rsi_fast'] < self.buy_rsi_fast.value) &
+        #         (dataframe['close'] < dataframe['ema_8'] * self.buy_ema_low_2.value) &
+        #         (dataframe['EWO'] > self.buy_ewo_high.value) &
+        #         (dataframe['close'] < dataframe['ema_16'] * self.buy_ema_high_2.value) &
+        #         (dataframe['rsi'] < self.buy_rsi.value)
+        #     )
 
-        is_cofi = (
-                (dataframe['open'] < dataframe['ema_8'] * self.buy_ema_cofi.value) &
-                (qtpylib.crossed_above(dataframe['fastk'], dataframe['fastd'])) &
-                (dataframe['fastk'] < self.buy_fastk.value) &
-                (dataframe['fastd'] < self.buy_fastd.value) &
-                (dataframe['adx'] > self.buy_adx.value) &
-                (dataframe['EWO'] > self.buy_ewo_high.value)
-            )
+        # is_cofi = (
+        #         (dataframe['open'] < dataframe['ema_8'] * self.buy_ema_cofi.value) &
+        #         (qtpylib.crossed_above(dataframe['fastk'], dataframe['fastd'])) &
+        #         (dataframe['fastk'] < self.buy_fastk.value) &
+        #         (dataframe['fastd'] < self.buy_fastd.value) &
+        #         (dataframe['adx'] > self.buy_adx.value) &
+        #         (dataframe['EWO'] > self.buy_ewo_high.value)
+        #     )
 
         # NFI quick mode
 
@@ -479,20 +480,8 @@ class BB_RPB_TSL_RNG_VWAP(IStrategy):
                 (dataframe['volume'] > 0)
         )
 
-        # is_btc_safe = (
-
-        #         (dataframe['btc_diff'] > self.buy_btc_safe.value)
-        #        &(dataframe['btc_5m'] - dataframe['btc_1d'] > dataframe['btc_1d'] * self.buy_btc_safe_1d.value)
-        #        &(dataframe['volume'] > 0)           # Make sure Volume is not 0
-        #     )
 
         is_BB_checked = is_dip & is_break
-
-        #print(dataframe['btc_5m'])
-        #print(dataframe['btc_1d'])
-        #print(dataframe['btc_5m'] - dataframe['btc_1d'])
-        #print(dataframe['btc_1d'] * -0.025)
-        #print(dataframe['btc_5m'] - dataframe['btc_1d'] > dataframe['btc_1d'] * -0.025)
 
         ## condition append
         conditions.append(is_BB_checked)          # ~1.7 89%
@@ -504,11 +493,11 @@ class BB_RPB_TSL_RNG_VWAP(IStrategy):
         conditions.append(is_ewo)                 # ~2.26 93.5%
         dataframe.loc[is_ewo, 'buy_tag'] += 'ewo '
 
-        conditions.append(is_ewo_2)               # ~3.68 90.3%
-        dataframe.loc[is_ewo_2, 'buy_tag'] += 'ewo2 '
-
-        conditions.append(is_cofi)                # ~3.21 90.8%
-        dataframe.loc[is_cofi, 'buy_tag'] += 'cofi '
+        # conditions.append(is_ewo_2)               # ~3.68 90.3%
+        # dataframe.loc[is_ewo_2, 'buy_tag'] += 'ewo2 '
+        #
+        # conditions.append(is_cofi)                # ~3.21 90.8%
+        # dataframe.loc[is_cofi, 'buy_tag'] += 'cofi '
 
         conditions.append(is_nfi_32)              # ~2.43 91.3%
         dataframe.loc[is_nfi_32, 'buy_tag'] += 'nfi 32 '
