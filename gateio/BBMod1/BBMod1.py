@@ -501,7 +501,7 @@ class BBMod1(IStrategy):
         buy_tags = buy_tag.split()
 
         if len(buy_tags) == 1:
-            for i in ["vwap", "clucHA", "nfi_38", "clucHA2"]:
+            for i in ["vwap", "clucHA", "clucHA2", "nfi_38", "nfi7_33", "nfi7_37"]:
                 if i in buy_tags:
                     pf_1 = 0.01
                     sl_1 = 0.008
