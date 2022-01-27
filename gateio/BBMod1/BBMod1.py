@@ -153,10 +153,8 @@ class BBMod1(IStrategy):
         "buy_rmi_length": 17,
         "buy_srsi_fk": 32,
         ##
-        # "buy_closedelta": 17.922,
         # rng
         "buy_closedelta": 12.148,
-        # "buy_ema_diff": 0.026,
         # rng
         "buy_ema_diff": 0.022,
         ##
@@ -228,8 +226,6 @@ class BBMod1(IStrategy):
         "sell_cti_r_cti": 0.844,
         "sell_cti_r_r": -19.99,
 
-        "base_nb_candles_sell": 24,
-        "high_offset": 0.991,
         "high_offset_2": 0.997,
 
         "pHSL": -0.99,
@@ -270,6 +266,8 @@ class BBMod1(IStrategy):
     # Custom stoploss
     use_custom_stoploss = True
     use_sell_signal = True
+
+    lower_trailing_list = ["vwap", "clucHA", "clucHA2", "nfi_38", "nfi7_33", "nfi7_37", "cofi"]
 
     ############################################################################
 
@@ -392,8 +390,6 @@ class BBMod1(IStrategy):
     sell_cti_r_r = DecimalParameter(-15, 0, default=-20, optimize=is_optimize_cti_r)
 
     # rng sell
-    base_nb_candles_sell = IntParameter(5, 80, default=sell_params['base_nb_candles_sell'], space='sell', optimize=True)
-    high_offset = DecimalParameter(0.95, 1.1, default=sell_params['high_offset'], space='sell', optimize=True)
     high_offset_2 = DecimalParameter(0.99, 1.5, default=sell_params['high_offset_2'], space='sell', optimize=True)
 
     # hard stoploss profit
@@ -501,7 +497,7 @@ class BBMod1(IStrategy):
         buy_tags = buy_tag.split()
 
         if len(buy_tags) == 1:
-            for i in ["vwap", "clucHA", "clucHA2", "nfi_38", "nfi7_33", "nfi7_37"]:
+            for i in self.lower_trailing_list:
                 if i in buy_tags:
                     pf_1 = 0.01
                     sl_1 = 0.008
@@ -522,6 +518,48 @@ class BBMod1(IStrategy):
             return -0.99
 
         return stoploss_from_open(sl_profit, current_profit)
+
+    def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
+                    current_profit: float, **kwargs):
+
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+
+        last_candle = dataframe.iloc[-1]
+
+        buy_tag = ''
+        if hasattr(trade, 'buy_tag') and trade.buy_tag is not None:
+            buy_tag = trade.buy_tag
+        buy_tags = buy_tag.split()
+
+        if current_profit >= 0.01 and len(buy_tags) == 1:
+            for i in self.lower_trailing_list:
+                if i in buy_tags:
+                    return None
+
+        if current_profit >= 0.019:
+            return None
+
+        if 0.019 > current_profit >= 0.0:
+            if (last_candle['cti'] > self.sell_cti_r_cti.value) and (last_candle['r_14'] > self.sell_cti_r_r.value):
+                return f"sell_profit_cti_r_0_1( {buy_tag})"
+
+        # when loss is -,use sell signal.
+        if (
+                (current_profit < 0.0)
+                and (last_candle['close'] > last_candle['sma_9'])
+                and (last_candle['close'] > last_candle['ema_24'] * self.high_offset_2.value)
+                and (last_candle['rsi'] > 50)
+                and (last_candle['rsi_fast'] > last_candle['rsi_slow'])
+        ):
+            return f"sell_offset( {buy_tag})"
+
+        if (
+                (current_profit < 0.0)
+                and (last_candle['close'] > last_candle['ema_49'] * 1.006)
+        ):
+            return f"sell_offset2( {buy_tag})"
+
+    ############################################################################
 
     def normal_tf_indicators(self, dataframe: DataFrame) -> DataFrame:
 
@@ -551,10 +589,6 @@ class BBMod1(IStrategy):
         # RMI hyperopt
         for val in self.buy_rmi_length.range:
             dataframe[f'rmi_length_{val}'] = RMI(dataframe, length=val, mom=4)
-
-        # Calculate all ma_sell values
-        for val in self.base_nb_candles_sell.range:
-            dataframe[f'ma_sell_{val}'] = ta.EMA(dataframe, timeperiod=val)
 
         # SRSI hyperopt
         stoch = ta.STOCHRSI(dataframe, 15, 20, 2, 2)
@@ -593,7 +627,9 @@ class BBMod1(IStrategy):
         dataframe['ema_13'] = ta.EMA(dataframe, timeperiod=13)
         dataframe['ema_16'] = ta.EMA(dataframe, timeperiod=16)
         dataframe['ema_20'] = ta.EMA(dataframe, timeperiod=20)
+        dataframe['ema_24'] = ta.EMA(dataframe, timeperiod=24)
         dataframe['ema_26'] = ta.EMA(dataframe, timeperiod=26)
+        dataframe['ema_49'] = ta.EMA(dataframe, timeperiod=49)
         dataframe['ema_50'] = ta.EMA(dataframe, timeperiod=50)
         dataframe['ema_100'] = ta.EMA(dataframe, timeperiod=100)
         dataframe['ema_200'] = ta.EMA(dataframe, timeperiod=200)
@@ -997,34 +1033,7 @@ class BBMod1(IStrategy):
         return dataframe
 
     def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        conditions = [(
-                              (dataframe['close'] > dataframe['sma_9']) &
-                              (dataframe['close'] > (
-                                      dataframe[
-                                          f'ma_sell_{self.base_nb_candles_sell.value}'] * self.high_offset_2.value)) &
-                              (dataframe['rsi'] > 50) &
-                              (dataframe['volume'] > 0) &
-                              (dataframe['rsi_fast'] > dataframe['rsi_slow'])
-
-                      )
-                      |
-                      (
-                              (dataframe['sma_9'] > (
-                                          dataframe['sma_9'].shift(1) + dataframe['sma_9'].shift(1) * 0.005)) &
-                              (dataframe['close'] < dataframe['hma_50']) &
-                              (dataframe['close'] > (
-                                      dataframe[
-                                          f'ma_sell_{self.base_nb_candles_sell.value}'] * self.high_offset.value)) &
-                              (dataframe['volume'] > 0) &
-                              (dataframe['rsi_fast'] > dataframe['rsi_slow'])
-                      )]
-
-        if conditions:
-            dataframe.loc[
-                reduce(lambda x, y: x | y, conditions),
-                'sell'
-            ] = 1
-
+        dataframe.loc[(dataframe['volume'] > 0), 'sell'] = 0
         return dataframe
 
 
