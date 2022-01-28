@@ -12,3 +12,6 @@ don't use ClucHAnix in bear market(btc cross under day ma120).it will loss you a
 BBMod1
 
 BBMod1 is my live str.but its custom sell still not finishied. use by your own risk.
+
+TODO:
+create ClucHAnix dca str.
