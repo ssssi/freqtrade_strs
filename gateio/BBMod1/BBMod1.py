@@ -525,6 +525,8 @@ class BBMod1(IStrategy):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
 
         last_candle = dataframe.iloc[-1]
+        previous_candle_1 = dataframe.iloc[-2]
+        previous_candle_2 = dataframe.iloc[-3]
 
         buy_tag = ''
         if hasattr(trade, 'buy_tag') and trade.buy_tag is not None:
@@ -542,6 +544,17 @@ class BBMod1(IStrategy):
         if 0.019 > current_profit >= 0.0:
             if (last_candle['cti'] > self.sell_cti_r_cti.value) and (last_candle['r_14'] > self.sell_cti_r_r.value):
                 return f"sell_profit_cti_r_0_1( {buy_tag})"
+
+            elif buy_tag in ['nfix_39 ']:   # handle nfix_39 buy condition
+                if (
+                        (last_candle['fisher'] > 0.39075)
+                        and (last_candle['ha_high'] <= previous_candle_1['ha_high'])
+                        and (previous_candle_1['ha_high'] <= previous_candle_2['ha_high'])
+                        and (last_candle['ha_close'] <= previous_candle_1['ha_close'])
+                        and (last_candle['ema_4'] > last_candle['ha_close'])
+                        and (last_candle['ha_close'] * 0.99754 > last_candle['bb_middleband2'])
+                ):
+                    return f"sell_scalp( {buy_tag})"
 
         # when loss is -,use sell signal.
         if (
