@@ -499,8 +499,10 @@ class BBMod1(IStrategy):
         if len(buy_tags) == 1:
             for i in self.lower_trailing_list:
                 if i in buy_tags:
-                    if current_profit >= 0.01:
-                        return 0.0085
+                    if current_profit >= 0.019:
+                        break
+                    elif current_profit >= 0.01:
+                        return 0.009
 
         # For profits between PF_1 and PF_2 the stoploss (sl_profit) used is linearly interpolated
         # between the values of SL_1 and SL_2. For all profits above PL_2 the sl_profit value
