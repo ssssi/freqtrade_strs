@@ -499,8 +499,8 @@ class BBMod1(IStrategy):
         if len(buy_tags) == 1:
             for i in self.lower_trailing_list:
                 if i in buy_tags:
-                    pf_1 = 0.01
-                    sl_1 = 0.008
+                    if current_profit >= 0.01:
+                        return 0.0085
 
         # For profits between PF_1 and PF_2 the stoploss (sl_profit) used is linearly interpolated
         # between the values of SL_1 and SL_2. For all profits above PL_2 the sl_profit value
@@ -829,14 +829,14 @@ class BBMod1(IStrategy):
         #         (dataframe['rsi'] < self.buy_rsi_ewo_2.value)
         #     )
 
-        is_r_deadfish = (                                                                             # reverse deadfish
-                (dataframe['ema_100'] < dataframe['ema_200'] * self.buy_r_deadfish_ema.value) &
-                (dataframe['bb_width'] > self.buy_r_deadfish_bb_width.value) &
-                (dataframe['close'] < dataframe['bb_middleband2'] * self.buy_r_deadfish_bb_factor.value) &
-                (dataframe['volume_mean_12'] > dataframe['volume_mean_24'] * self.buy_r_deadfish_volume_factor.value) &
-                (dataframe['cti'] < self.buy_r_deadfish_cti.value) &
-                (dataframe['r_14'] < self.buy_r_deadfish_r14.value)
-            )
+        # is_r_deadfish = (                                                                             # reverse deadfish
+        #         (dataframe['ema_100'] < dataframe['ema_200'] * self.buy_r_deadfish_ema.value) &
+        #         (dataframe['bb_width'] > self.buy_r_deadfish_bb_width.value) &
+        #         (dataframe['close'] < dataframe['bb_middleband2'] * self.buy_r_deadfish_bb_factor.value) &
+        #         (dataframe['volume_mean_12'] > dataframe['volume_mean_24'] * self.buy_r_deadfish_volume_factor.value) &
+        #         (dataframe['cti'] < self.buy_r_deadfish_cti.value) &
+        #         (dataframe['r_14'] < self.buy_r_deadfish_r14.value)
+        #     )
 
         is_clucha = (
                 (dataframe['rocr_1h'].gt(self.buy_clucha_rocr_1h.value)) &
@@ -990,8 +990,8 @@ class BBMod1(IStrategy):
         # conditions.append(is_ewo_2)                                                 # ~2.86 / 91.5% / 33.31%     D
         # dataframe.loc[is_ewo_2, 'buy_tag'] += 'ewo2 '
 
-        conditions.append(is_r_deadfish)                                           # ~0.99 / 86.9% / 21.93%      D
-        dataframe.loc[is_r_deadfish, 'buy_tag'] += 'r_deadfish '
+        # conditions.append(is_r_deadfish)                                           # ~0.99 / 86.9% / 21.93%      D
+        # dataframe.loc[is_r_deadfish, 'buy_tag'] += 'r_deadfish '
 
         conditions.append(is_clucha)                                               # ~7.2 / 92.5% / 97.98%       D
         dataframe.loc[is_clucha, 'buy_tag'] += 'clucHA '
