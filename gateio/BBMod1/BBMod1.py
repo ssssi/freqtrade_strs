@@ -267,7 +267,7 @@ class BBMod1(IStrategy):
     use_custom_stoploss = True
     use_sell_signal = True
 
-    lower_trailing_list = ["vwap", "clucHA", "clucHA2", "nfi_38", "nfi7_33", "nfi7_37", "cofi"]
+    # lower_trailing_list = ["vwap", "clucHA", "clucHA2", "nfi_38", "nfi7_33", "nfi7_37", "cofi"]
 
     ############################################################################
 
@@ -491,27 +491,29 @@ class BBMod1(IStrategy):
         pf_2 = self.pPF_2.value
         sl_2 = self.pSL_2.value
 
-        buy_tag = ''
-        if hasattr(trade, 'buy_tag') and trade.buy_tag is not None:
-            buy_tag = trade.buy_tag
-        buy_tags = buy_tag.split()
-
-        if len(buy_tags) == 1:
-            for i in self.lower_trailing_list:
-                if i in buy_tags:
-                    if current_profit >= 0.019:
-                        break
-                    elif current_profit >= 0.01:
-                        return 0.009
+        # buy_tag = ''
+        # if hasattr(trade, 'buy_tag') and trade.buy_tag is not None:
+        #     buy_tag = trade.buy_tag
+        # buy_tags = buy_tag.split()
+        #
+        # if len(buy_tags) == 1:
+        #     for i in self.lower_trailing_list:
+        #         if i in buy_tags:
+        #             if current_profit >= 0.019:
+        #                 break
+        #             elif current_profit >= 0.01:
+        #                 return 0.009
 
         # For profits between PF_1 and PF_2 the stoploss (sl_profit) used is linearly interpolated
         # between the values of SL_1 and SL_2. For all profits above PL_2 the sl_profit value
         # rises linearly with current profit, for profits below PF_1 the hard stoploss profit is used.
 
-        if current_profit > pf_2:
+        if current_profit >= pf_2:
             sl_profit = sl_2 + (current_profit - pf_2)
-        elif current_profit > pf_1:
+        elif current_profit >= pf_1:
             sl_profit = sl_1 + ((current_profit - pf_1) * (sl_2 - sl_1) / (pf_2 - pf_1))
+        elif current_profit >= 0.01:
+            return 0.0095
         else:
             sl_profit = stoploss
 
@@ -533,17 +535,20 @@ class BBMod1(IStrategy):
         buy_tag = ''
         if hasattr(trade, 'buy_tag') and trade.buy_tag is not None:
             buy_tag = trade.buy_tag
-        buy_tags = buy_tag.split()
+        # buy_tags = buy_tag.split()
 
-        if current_profit >= 0.01 and len(buy_tags) == 1:
-            for i in self.lower_trailing_list:
-                if i in buy_tags:
-                    return None
+        # if current_profit >= 0.01 and len(buy_tags) == 1:
+        #     for i in self.lower_trailing_list:
+        #         if i in buy_tags:
+        #             return None
 
         if current_profit >= 0.019:
             return None
 
-        if 0.019 > current_profit >= 0.0:
+        if current_profit >= 0.01:
+            return None
+
+        if 0.01 > current_profit >= 0.0:
             if (last_candle['cti'] > self.sell_cti_r_cti.value) and (last_candle['r_14'] > self.sell_cti_r_r.value):
                 return f"sell_profit_cti_r_0_1( {buy_tag})"
 
@@ -565,6 +570,7 @@ class BBMod1(IStrategy):
                 and (last_candle['close'] > last_candle['ema_24'] * self.high_offset_2.value)
                 and (last_candle['rsi'] > 50)
                 and (last_candle['rsi_fast'] > last_candle['rsi_slow'])
+                and (last_candle["close"] < last_candle["bb_middleband2"])
         ):
             return f"sell_offset( {buy_tag})"
 
