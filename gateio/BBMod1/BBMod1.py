@@ -228,6 +228,10 @@ class BBMod1(IStrategy):
 
         "high_offset_2": 0.997,
 
+        # cluc sell params
+        'sell_fisher': 0.39075,
+        'sell_bbmiddle_close': 0.99754,
+
         "pHSL": -0.99,
         "pPF_1": 0.019,
         "pPF_2": 0.05,
@@ -391,6 +395,8 @@ class BBMod1(IStrategy):
 
     # rng sell
     high_offset_2 = DecimalParameter(0.99, 1.5, default=sell_params['high_offset_2'], space='sell', optimize=True)
+    sell_fisher = DecimalParameter(0.1, 0.5, default=0.38414, space='sell', optimize=True)
+    sell_bbmiddle_close = DecimalParameter(0.97, 1.1, default=1.07634, space='sell', optimize=True)
 
     # hard stoploss profit
     pHSL = DecimalParameter(-0.200, -0.040, default=-0.08, decimals=3, space='sell', load=True)
@@ -512,6 +518,8 @@ class BBMod1(IStrategy):
             sl_profit = sl_2 + (current_profit - pf_2)
         elif current_profit >= pf_1:
             sl_profit = sl_1 + ((current_profit - pf_1) * (sl_2 - sl_1) / (pf_2 - pf_1))
+        elif 0.019 > current_profit > 0.01:
+            return 0.005
         elif current_profit >= 0.01:
             return 0.0095
         else:
@@ -531,6 +539,8 @@ class BBMod1(IStrategy):
         last_candle = dataframe.iloc[-1]
         previous_candle_1 = dataframe.iloc[-2]
         previous_candle_2 = dataframe.iloc[-3]
+
+        sell_offset_open = []
 
         buy_tag = ''
         if hasattr(trade, 'buy_tag') and trade.buy_tag is not None:
@@ -565,20 +575,34 @@ class BBMod1(IStrategy):
 
         # when loss is -,use sell signal.
         if (
-                (current_profit < 0.0)
+                (current_profit < 0.01)
                 and (last_candle['close'] > last_candle['sma_9'])
                 and (last_candle['close'] > last_candle['ema_24'] * self.high_offset_2.value)
                 and (last_candle['rsi'] > 50)
                 and (last_candle['rsi_fast'] > last_candle['rsi_slow'])
-                and (last_candle["close"] < last_candle["bb_middleband2"])
         ):
-            return f"sell_offset( {buy_tag})"
+            sell_offset_open.append(trade.id)
 
         if (
-                (current_profit < 0.0)
+                (current_profit < 0.01)
+                and (last_candle['fisher'] > self.sell_fisher.value)
+                and (last_candle['ha_high'] < previous_candle_1['ha_high'])
+                and (previous_candle_1['ha_high'] < previous_candle_2["ha_high"])
+                and (last_candle['ha_close'] < previous_candle_1['ha_close'])
+                and (last_candle["ema_fast"] > last_candle["ha_close"])
+                and ((last_candle["ha_close"] * self.sell_bbmiddle_close.value) > last_candle["bb_middleband2_40"])
+        ):
+            return f"cluc_sell( {buy_tag})"
+
+        if (
+                (current_profit < 0.01)
                 and (last_candle['close'] > last_candle['ema_49'] * 1.006)
         ):
             return f"sell_offset2( {buy_tag})"
+
+        for i in sell_offset_open:
+            if trade.id == i and (last_candle["close"] < last_candle["bb_middleband2"]):
+                return f"sell_offset_drop_bb_mid( {buy_tag})"
 
     ############################################################################
 
@@ -698,6 +722,7 @@ class BBMod1(IStrategy):
         dataframe['ha_closedelta'] = (dataframe['ha_close'] - dataframe['ha_close'].shift()).abs()
         dataframe['tail'] = (dataframe['ha_close'] - dataframe['ha_low']).abs()
         dataframe['ema_slow'] = ta.EMA(dataframe['ha_close'], timeperiod=50)
+        dataframe['ema_fast'] = ta.EMA(dataframe['ha_close'], timeperiod=3)
         dataframe['rocr'] = ta.ROCR(dataframe['ha_close'], timeperiod=28)
 
         # Cofi
