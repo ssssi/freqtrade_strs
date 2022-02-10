@@ -1,6 +1,10 @@
+from typing import Optional
+
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy as np
 import talib.abstract as ta
+
+from freqtrade.persistence import Trade
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy import merge_informative_pair, DecimalParameter, stoploss_from_open, RealParameter
 from pandas import DataFrame, Series
@@ -25,7 +29,7 @@ class ClucHAnix_5m(IStrategy):
     Can be overridden for specific sub-strategies (stake currencies) at the bottom.
     """
     
-    #hypered params
+    # hypered params
     buy_params = {
         "bbdelta_close": 0.01889,
         "bbdelta_tail": 0.72235,
@@ -37,11 +41,11 @@ class ClucHAnix_5m(IStrategy):
     # Sell hyperspace params:
     sell_params = {
         # custom stoploss params, come from BB_RPB_TSL
-        "pHSL": -0.35,
-        "pPF_1": 0.011,
-        "pPF_2": 0.064,
-        "pSL_1": 0.011,
-        "pSL_2": 0.062,
+        "pHSL": -0.99,
+        "pPF_1": 0.02,
+        "pPF_2": 0.05,
+        "pSL_1": 0.02,
+        "pSL_2": 0.04,
 
         # sell signal params
         'sell_fisher': 0.39075,
@@ -226,3 +230,43 @@ class ClucHAnix_5m(IStrategy):
         ] = 1
 
         return dataframe
+
+
+class Cluc5mDCA(ClucHAnix_5m):
+    position_adjustment_enable = True
+
+    max_rebuy_orders = 2
+    max_rebuy_multiplier = 3
+
+    # This is called when placing the initial order (opening trade)
+    def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
+                            proposed_stake: float, min_stake: float, max_stake: float,
+                            entry_tag: Optional[str], **kwargs) -> float:
+
+        if (self.config['position_adjustment_enable'] is True) and (self.config['stake_amount'] == 'unlimited'):
+            return proposed_stake / self.max_rebuy_multiplier
+        else:
+            return proposed_stake
+
+    def adjust_trade_position(self, trade: Trade, current_time: datetime,
+                              current_rate: float, current_profit: float, min_stake: float,
+                              max_stake: float, **kwargs):
+
+        if (self.config['position_adjustment_enable'] is False) or (current_profit > -0.03):
+            return None
+
+        filled_buys = trade.select_filled_orders('buy')
+        count_of_buys = len(filled_buys)
+
+        # Maximum 2 rebuys, equal stake as the original
+        if 0 < count_of_buys <= self.max_rebuy_orders:
+            try:
+                # This returns first order stake size
+                stake_amount = filled_buys[0].cost
+                # This then calculates current safety order size
+                stake_amount = stake_amount
+                return stake_amount
+            except Exception as exception:
+                return None
+
+        return None
