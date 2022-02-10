@@ -1,4 +1,6 @@
 # --- Do not remove these libs ---
+from typing import Optional
+
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy as np
 import talib.abstract as ta
@@ -518,10 +520,6 @@ class BBMod1(IStrategy):
             sl_profit = sl_2 + (current_profit - pf_2)
         elif current_profit >= pf_1:
             sl_profit = sl_1 + ((current_profit - pf_1) * (sl_2 - sl_1) / (pf_2 - pf_1))
-        elif 0.019 > current_profit > 0.01:
-            return 0.005
-        elif current_profit >= 0.01:
-            return 0.0095
         else:
             sl_profit = stoploss
 
@@ -536,11 +534,11 @@ class BBMod1(IStrategy):
 
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
 
-        last_candle = dataframe.iloc[-1]
-        previous_candle_1 = dataframe.iloc[-2]
-        previous_candle_2 = dataframe.iloc[-3]
+        last_candle = dataframe.iloc[-1].squeeze()
+        previous_candle_1 = dataframe.iloc[-2].squeeze()
+        previous_candle_2 = dataframe.iloc[-3].squeeze()
 
-        sell_offset_open = []
+        # sell_offset_open = []
 
         buy_tag = ''
         if hasattr(trade, 'buy_tag') and trade.buy_tag is not None:
@@ -555,10 +553,7 @@ class BBMod1(IStrategy):
         if current_profit >= 0.019:
             return None
 
-        if current_profit >= 0.01:
-            return None
-
-        if 0.01 > current_profit >= 0.0:
+        if 0.019 > current_profit >= 0.0:
             if (last_candle['cti'] > self.sell_cti_r_cti.value) and (last_candle['r_14'] > self.sell_cti_r_r.value):
                 return f"sell_profit_cti_r_0_1( {buy_tag})"
 
@@ -574,17 +569,17 @@ class BBMod1(IStrategy):
                     return f"sell_scalp( {buy_tag})"
 
         # when loss is -,use sell signal.
-        if (
-                (current_profit < 0.01)
-                and (last_candle['close'] > last_candle['sma_9'])
-                and (last_candle['close'] > last_candle['ema_24'] * self.high_offset_2.value)
-                and (last_candle['rsi'] > 50)
-                and (last_candle['rsi_fast'] > last_candle['rsi_slow'])
-        ):
-            sell_offset_open.append(trade.id)
+        # if (
+        #         (current_profit < 0.019)
+        #         and (last_candle['close'] > last_candle['sma_9'])
+        #         and (last_candle['close'] > last_candle['ema_24'] * self.high_offset_2.value)
+        #         and (last_candle['rsi'] > 50)
+        #         and (last_candle['rsi_fast'] > last_candle['rsi_slow'])
+        # ):
+        #     sell_offset_open.append(trade.id)
 
         if (
-                (current_profit < 0.01)
+                (current_profit < 0.019)
                 and (last_candle['fisher'] > self.sell_fisher.value)
                 and (last_candle['ha_high'] < previous_candle_1['ha_high'])
                 and (previous_candle_1['ha_high'] < previous_candle_2["ha_high"])
@@ -595,14 +590,14 @@ class BBMod1(IStrategy):
             return f"cluc_sell( {buy_tag})"
 
         if (
-                (current_profit < 0.01)
+                (current_profit < 0.019)
                 and (last_candle['close'] > last_candle['ema_49'] * 1.006)
         ):
             return f"sell_offset2( {buy_tag})"
 
-        for i in sell_offset_open:
-            if trade.id == i and (last_candle["close"] < last_candle["bb_middleband2"]):
-                return f"sell_offset_drop_bb_mid( {buy_tag})"
+        # for i in sell_offset_open:
+        #     if trade.id == i and (last_candle["close"] < last_candle["bb_middleband2"]):
+        #         return f"sell_offset_drop_bb_mid( {buy_tag})"
 
     ############################################################################
 
@@ -1206,3 +1201,43 @@ def t3(dataframe, length=5):
     df['T3Average'] = c1 * df['xe6'] + c2 * df['xe5'] + c3 * df['xe4'] + c4 * df['xe3']
 
     return df['T3Average']
+
+
+class BBMod1DCA(BBMod1):
+    position_adjustment_enable = True
+
+    max_rebuy_orders = 2
+    max_rebuy_multiplier = 3
+
+    # This is called when placing the initial order (opening trade)
+    def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
+                            proposed_stake: float, min_stake: float, max_stake: float,
+                            entry_tag: Optional[str], **kwargs) -> float:
+
+        if (self.config['position_adjustment_enable'] is True) and (self.config['stake_amount'] == 'unlimited'):
+            return proposed_stake / self.max_rebuy_multiplier
+        else:
+            return proposed_stake
+
+    def adjust_trade_position(self, trade: Trade, current_time: datetime,
+                              current_rate: float, current_profit: float, min_stake: float,
+                              max_stake: float, **kwargs):
+
+        if (self.config['position_adjustment_enable'] is False) or (current_profit > -0.03):
+            return None
+
+        filled_buys = trade.select_filled_orders('buy')
+        count_of_buys = len(filled_buys)
+
+        # Maximum 2 rebuys, equal stake as the original
+        if 0 < count_of_buys <= self.max_rebuy_orders:
+            try:
+                # This returns first order stake size
+                stake_amount = filled_buys[0].cost
+                # This then calculates current safety order size
+                stake_amount = stake_amount
+                return stake_amount
+            except Exception as exception:
+                return None
+
+        return None
