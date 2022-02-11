@@ -183,6 +183,8 @@ class ClucHAnix(IStrategy):
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         params = self.buy_params
 
+        dataframe.loc[:, 'buy_tag'] = 'ClucHA'
+
         dataframe.loc[
             (
                 dataframe['rocr_1h'].gt(params['rocr-1h'])
