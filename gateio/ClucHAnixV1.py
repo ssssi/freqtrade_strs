@@ -190,12 +190,6 @@ class ClucHAnixV1(IStrategy):
         dataframe['aroon-down'] = aroon['aroondown']
         dataframe['aroon-up'] = aroon['aroonup']
 
-        # fishihull
-        dataframe['hma'] = qtpylib.hma(dataframe['close'], 14)
-        dataframe['cci'] = ta.CCI(dataframe, timeperiod=14)
-        rsi = 0.1 * (dataframe['rsi_14'] - 50)
-        dataframe['fisher_rsi'] = (np.exp(2 * rsi) - 1) / (np.exp(2 * rsi) + 1)
-
         # cci
         dataframe = self.resample(dataframe, self.timeframe, 5)
         dataframe['cci_one'] = ta.CCI(dataframe, timeperiod=170)
@@ -254,19 +248,11 @@ class ClucHAnixV1(IStrategy):
                 (dataframe['volume'] > 0)
         )
 
-        fishi_hull = (
-                (dataframe['hma'] < dataframe['hma'].shift()) &
-                (dataframe['cci'] <= -50.0) &
-                (dataframe['fisher_rsi'] < -0.5) &
-                (dataframe['volume'] > 0)
-        )
-
         cci = (
                 (dataframe['cci_one'] < -100)
                 & (dataframe['cci_two'] < -100)
                 & (dataframe['cmf'] < -0.1)
                 & (dataframe['mfi'] < 25)
-
                 # insurance
                 & (dataframe['resample_medium'] > dataframe['resample_short'])
                 & (dataframe['resample_long'] < dataframe['close'])
@@ -280,9 +266,6 @@ class ClucHAnixV1(IStrategy):
 
         conditions.append(yolo)
         dataframe.loc[yolo, 'buy_tag'] += 'yolo '
-
-        conditions.append(fishi_hull)
-        dataframe.loc[fishi_hull, 'buy_tag'] += 'fishi_hull '
 
         conditions.append(cci)
         dataframe.loc[cci, 'buy_tag'] += 'cci '
