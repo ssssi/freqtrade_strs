@@ -258,8 +258,8 @@ class ClucHAnix(IStrategy):
 class ClucDCA(ClucHAnix):
     position_adjustment_enable = True
 
-    max_rebuy_orders = 2
-    max_rebuy_multiplier = 3
+    max_rebuy_orders = 1
+    max_rebuy_multiplier = 2
 
     # This is called when placing the initial order (opening trade)
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
@@ -275,7 +275,7 @@ class ClucDCA(ClucHAnix):
                               current_rate: float, current_profit: float, min_stake: float,
                               max_stake: float, **kwargs):
 
-        if (self.config['position_adjustment_enable'] is False) or (current_profit > -0.06):
+        if (self.config['position_adjustment_enable'] is False) or (current_profit > -0.08):
             return None
 
         filled_buys = trade.select_filled_orders('buy')
