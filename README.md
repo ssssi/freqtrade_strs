@@ -8,6 +8,6 @@ I will update the Gateio blacklist regularly.
 ClucHAnix and ClucHAnix_5m had added dca class.
 i had start dry run for these.
 
-BBMod1
+CCIStrategy
 
-is no longer my live str.i use cluc 5m dca str.
+i had start a dry run for CCIStrategy in dca model.
