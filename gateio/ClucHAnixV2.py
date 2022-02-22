@@ -182,6 +182,7 @@ class ClucHAnixV2(IStrategy):
         # get btc 1d informative
         inf_tf_1d = '1d'
         informative_btc_1d = self.dp.get_pair_dataframe(pair=f"BTC/USDT", timeframe=inf_tf_1d)
+        informative_btc_1d['ema90'] = ta.EMA(informative_btc_1d, timeperiod=90)
 
         macd = ta.MACD(informative_btc_1d, fastperiod=12, slowperiod=26, signalperiod=9)
         informative_btc_1d['macd'] = macd['macd']
@@ -198,8 +199,11 @@ class ClucHAnixV2(IStrategy):
 
         dataframe.loc[
             (
-                (dataframe['rocr_1h'].gt(params['rocr-1h'])) &
-                (dataframe['macd_1d'] > dataframe['macdsignal_1d'])
+                    (dataframe['rocr_1h'].gt(params['rocr-1h'])) &
+                    (
+                            (dataframe['macd_1d'] > dataframe['macdsignal_1d']) |
+                            (dataframe['close_1d'] > dataframe['ema90_1d'])
+                    )
             ) &
             ((
                      (dataframe['lower'].shift().gt(0)) &
