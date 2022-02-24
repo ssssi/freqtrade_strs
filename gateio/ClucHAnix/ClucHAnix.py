@@ -1,4 +1,3 @@
-from functools import reduce
 from typing import Optional
 
 import freqtrade.vendor.qtpylib.indicators as qtpylib
@@ -7,7 +6,7 @@ import talib.abstract as ta
 
 from freqtrade.persistence import Trade
 from freqtrade.strategy.interface import IStrategy
-from freqtrade.strategy import merge_informative_pair, DecimalParameter, stoploss_from_open, IntParameter
+from freqtrade.strategy import merge_informative_pair, DecimalParameter, stoploss_from_open
 from pandas import DataFrame, Series
 from datetime import datetime
 
@@ -36,18 +35,13 @@ class ClucHAnix(IStrategy):
         'bbdelta-tail': 0.95089,
         'close-bblower': 0.00799,
         'closedelta-close': 0.00556,
-        'rocr-1h': 0.54904,
-
-        # lambo2_
-        "lambo2_ema_14_factor": 0.981,
-        "lambo2_rsi_14_limit": 39,
-        "lambo2_rsi_4_limit": 44,
+        'rocr-1h': 0.54904
     }
 
     # Sell hyperspace params:
     sell_params = {
         # custom stoploss params, come from BB_RPB_TSL
-        "pHSL": -0.99,
+        "pHSL": -0.15,
         "pPF_1": 0.02,
         "pPF_2": 0.05,
         "pSL_1": 0.02,
@@ -111,11 +105,6 @@ class ClucHAnix(IStrategy):
     pPF_2 = DecimalParameter(0.040, 0.100, default=0.080, decimals=3, space='sell', load=True)
     pSL_2 = DecimalParameter(0.020, 0.070, default=0.040, decimals=3, space='sell', load=True)
 
-    # lambo2_
-    lambo2_ema_14_factor = DecimalParameter(0.8, 1.2, decimals=3,  default=buy_params['lambo2_ema_14_factor'], space='buy', optimize=True)
-    lambo2_rsi_4_limit = IntParameter(5, 60, default=buy_params['lambo2_rsi_4_limit'], space='buy', optimize=True)
-    lambo2_rsi_14_limit = IntParameter(5, 60, default=buy_params['lambo2_rsi_14_limit'], space='buy', optimize=True)
-
     def informative_pairs(self):
         pairs = self.dp.current_whitelist()
         informative_pairs = [(pair, '1h') for pair in pairs]
@@ -173,11 +162,6 @@ class ClucHAnix(IStrategy):
         dataframe['volume_mean_slow'] = dataframe['volume'].rolling(window=30).mean()
         dataframe['rocr'] = ta.ROCR(dataframe['ha_close'], timeperiod=28)
 
-        # lambo2_
-        dataframe['ema_14'] = ta.EMA(dataframe, timeperiod=14)
-        dataframe['rsi_4'] = ta.RSI(dataframe, timeperiod=4)
-        dataframe['rsi_14'] = ta.RSI(dataframe, timeperiod=14)
-
         rsi = ta.RSI(dataframe)
         dataframe["rsi"] = rsi
         rsi = 0.1 * (rsi - 50)
@@ -199,41 +183,24 @@ class ClucHAnix(IStrategy):
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         params = self.buy_params
 
-        conditions = []
-        dataframe.loc[:, 'buy_tag'] = ''
-
-        lambo2 = (
-            (dataframe['close'] < (dataframe['ema_14'] * self.lambo2_ema_14_factor.value)) &
-            (dataframe['rsi_4'] < int(self.lambo2_rsi_4_limit.value)) &
-            (dataframe['rsi_14'] < int(self.lambo2_rsi_14_limit.value))
-        )
-
-        clucha = (
-                (dataframe['rocr_1h'].gt(params['rocr-1h'])) &
-                ((
-                         (dataframe['lower'].shift().gt(0)) &
-                         (dataframe['bbdelta'].gt(dataframe['ha_close'] * params['bbdelta-close'])) &
-                         (dataframe['closedelta'].gt(dataframe['ha_close'] * params['closedelta-close'])) &
-                         (dataframe['tail'].lt(dataframe['bbdelta'] * params['bbdelta-tail'])) &
-                         (dataframe['ha_close'].lt(dataframe['lower'].shift())) &
-                         (dataframe['ha_close'].le(dataframe['ha_close'].shift()))
-                 ) |
-                 (
-                         (dataframe['ha_close'] < dataframe['ema_slow']) &
-                         (dataframe['ha_close'] < params['close-bblower'] * dataframe['bb_lowerband'])
-                 ))
-        )
-
-        conditions.append(lambo2)
-        dataframe.loc[lambo2, 'buy_tag'] += 'lambo2 '
-
-        conditions.append(clucha)
-        dataframe.loc[clucha, 'buy_tag'] += 'clucHA '
-
-        if conditions:
-            dataframe.loc[
-                            reduce(lambda x, y: x | y, conditions),
-                            'buy'] = 1
+        dataframe.loc[
+            (
+                dataframe['rocr_1h'].gt(params['rocr-1h'])
+            ) &
+            ((      
+                    (dataframe['lower'].shift().gt(0)) &
+                    (dataframe['bbdelta'].gt(dataframe['ha_close'] * params['bbdelta-close'])) &
+                    (dataframe['closedelta'].gt(dataframe['ha_close'] * params['closedelta-close'])) &
+                    (dataframe['tail'].lt(dataframe['bbdelta'] * params['bbdelta-tail'])) &
+                    (dataframe['ha_close'].lt(dataframe['lower'].shift())) &
+                    (dataframe['ha_close'].le(dataframe['ha_close'].shift()))
+            ) |
+            (       
+                    (dataframe['ha_close'] < dataframe['ema_slow']) &
+                    (dataframe['ha_close'] < params['close-bblower'] * dataframe['bb_lowerband']) 
+            )),
+            'buy'
+        ] = 1
 
         return dataframe
 

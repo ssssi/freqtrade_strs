@@ -41,7 +41,7 @@ class ClucHAnixV2(IStrategy):
     # Sell hyperspace params:
     sell_params = {
         # custom stoploss params, come from BB_RPB_TSL
-        "pHSL": -0.99,
+        "pHSL": -0.15,
         "pPF_1": 0.02,
         "pPF_2": 0.05,
         "pSL_1": 0.02,
