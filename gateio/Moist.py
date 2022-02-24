@@ -127,6 +127,18 @@ class Moist(IStrategy):
         return dataframe
 
     def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        dataframe.loc[(dataframe['macd_crossed_below']), 'sell'] = 1
+
+        dataframe['sell'] = 0
 
         return dataframe
+
+    def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
+                    current_profit: float, **kwargs):
+
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
+        last_candle = dataframe.iloc[-1].squeeze()
+
+        if current_profit < -0.03 and current_profit < last_candle['roc']:
+            return 'went_soft'
+
+        return None
