@@ -136,7 +136,7 @@ class VWAP(IStrategy):
                     TMP_HOLD.append(trade.id)
 
         for i in TMP_HOLD:
-            if trade.id == i and (last_candle["close"] < last_candle["bb_middleband"]):  # stop cross bb mid to sell
+            if trade.id == i and (last_candle["close"] < last_candle["bb_middleband"]):  # start cross under bb mid. --sell
                 TMP_HOLD.remove(i)
                 return "sell_drop_bb_mid"
 
