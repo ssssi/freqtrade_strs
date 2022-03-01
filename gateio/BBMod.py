@@ -533,8 +533,9 @@ class BBMod(IStrategy):
             ):
                 if trade.id not in TMP_HOLD:
                     TMP_HOLD.append(trade.id)
+                    return None
 
-        # start cross under bb mid to# sell
+        # start cross under bb mid to sell
         for i in TMP_HOLD:
             if trade.id == i and (last_candle["close"] < last_candle["bb_middleband2"]):
                 TMP_HOLD.remove(i)
