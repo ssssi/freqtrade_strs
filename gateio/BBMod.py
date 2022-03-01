@@ -15,6 +15,9 @@ from functools import reduce
 from technical.indicators import RMI, zema, VIDYA
 
 
+TMP_HOLD = []
+
+
 # --------------------------------
 def ha_typical_price(bars):
     res = (bars['ha_high'] + bars['ha_low'] + bars['ha_close']) / 3.
@@ -127,7 +130,7 @@ def top_percent_change(dataframe: DataFrame, length: int) -> float:
         return (dataframe['open'].rolling(length).max() - dataframe['close']) / dataframe['close']
 
 
-class BBMod1(IStrategy):
+class BBMod(IStrategy):
     """
         BBMod1 modified from BB_RPB_TSL ( https://github.com/jilv220/BB_RPB_TSL )
         @author jilv220
@@ -184,11 +187,11 @@ class BBMod1(IStrategy):
         "buy_r_deadfish_cti": -0.115,
         "buy_r_deadfish_r14": -44.34,
         ##
-        "buy_clucha_bbdelta_close": 0.01889,
-        "buy_clucha_bbdelta_tail": 0.72235,
-        "buy_clucha_close_bblower": 0.0127,
-        "buy_clucha_closedelta_close": 0.00916,
-        "buy_clucha_rocr_1h": 0.79492,
+        "buy_clucha_bbdelta_close": 0.049,
+        "buy_clucha_bbdelta_tail": 1.146,
+        "buy_clucha_close_bblower": 0.018,
+        "buy_clucha_closedelta_close": 0.017,
+        "buy_clucha_rocr_1h": 0.526,
         ##
         "buy_adx": 13,
         "buy_cofi_r14": -85.016,
@@ -230,11 +233,7 @@ class BBMod1(IStrategy):
 
         "high_offset_2": 0.997,
 
-        # cluc sell params
-        'sell_fisher': 0.39075,
-        'sell_bbmiddle_close': 0.99754,
-
-        "pHSL": -0.99,
+        "pHSL": -0.18,
         "pPF_1": 0.019,
         "pPF_2": 0.05,
         "pSL_1": 0.017,
@@ -272,10 +271,6 @@ class BBMod1(IStrategy):
     # Custom stoploss
     use_custom_stoploss = True
     use_sell_signal = True
-
-    # lower_trailing_list = ["vwap", "clucHA", "clucHA2", "nfi_38", "nfi7_33", "nfi7_37", "cofi"]
-
-    ############################################################################
 
     # Buy params
     is_optimize_dip = False
@@ -499,19 +494,6 @@ class BBMod1(IStrategy):
         pf_2 = self.pPF_2.value
         sl_2 = self.pSL_2.value
 
-        # buy_tag = ''
-        # if hasattr(trade, 'buy_tag') and trade.buy_tag is not None:
-        #     buy_tag = trade.buy_tag
-        # buy_tags = buy_tag.split()
-        #
-        # if len(buy_tags) == 1:
-        #     for i in self.lower_trailing_list:
-        #         if i in buy_tags:
-        #             if current_profit >= 0.019:
-        #                 break
-        #             elif current_profit >= 0.01:
-        #                 return 0.009
-
         # For profits between PF_1 and PF_2 the stoploss (sl_profit) used is linearly interpolated
         # between the values of SL_1 and SL_2. For all profits above PL_2 the sl_profit value
         # rises linearly with current profit, for profits below PF_1 the hard stoploss profit is used.
@@ -535,69 +517,28 @@ class BBMod1(IStrategy):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
 
         last_candle = dataframe.iloc[-1].squeeze()
-        previous_candle_1 = dataframe.iloc[-2].squeeze()
-        previous_candle_2 = dataframe.iloc[-3].squeeze()
-
-        # sell_offset_open = []
-
-        buy_tag = ''
-        if hasattr(trade, 'buy_tag') and trade.buy_tag is not None:
-            buy_tag = trade.buy_tag
-        # buy_tags = buy_tag.split()
-
-        # if current_profit >= 0.01 and len(buy_tags) == 1:
-        #     for i in self.lower_trailing_list:
-        #         if i in buy_tags:
-        #             return None
 
         if current_profit >= 0.019:
             return None
 
-        if 0.019 > current_profit >= 0.0:
-            if (last_candle['cti'] > self.sell_cti_r_cti.value) and (last_candle['r_14'] > self.sell_cti_r_r.value):
-                return f"sell_profit_cti_r_0_1( {buy_tag})"
-
-            elif buy_tag in ['nfix_39 ']:   # handle nfix_39 buy condition
-                if (
-                        (last_candle['fisher'] > 0.39075)
-                        and (last_candle['ha_high'] <= previous_candle_1['ha_high'])
-                        and (previous_candle_1['ha_high'] <= previous_candle_2['ha_high'])
-                        and (last_candle['ha_close'] <= previous_candle_1['ha_close'])
-                        and (last_candle['ema_4'] > last_candle['ha_close'])
-                        and (last_candle['ha_close'] * 0.99754 > last_candle['bb_middleband2'])
-                ):
-                    return f"sell_scalp( {buy_tag})"
-
-        # when loss is -,use sell signal.
-        # if (
-        #         (current_profit < 0.019)
-        #         and (last_candle['close'] > last_candle['sma_9'])
-        #         and (last_candle['close'] > last_candle['ema_24'] * self.high_offset_2.value)
-        #         and (last_candle['rsi'] > 50)
-        #         and (last_candle['rsi_fast'] > last_candle['rsi_slow'])
-        # ):
-        #     sell_offset_open.append(trade.id)
-
         if (
                 (current_profit < 0.019)
-                and (last_candle['fisher'] > self.sell_fisher.value)
-                and (last_candle['ha_high'] < previous_candle_1['ha_high'])
-                and (previous_candle_1['ha_high'] < previous_candle_2["ha_high"])
-                and (last_candle['ha_close'] < previous_candle_1['ha_close'])
-                and (last_candle["ema_fast"] > last_candle["ha_close"])
-                and ((last_candle["ha_close"] * self.sell_bbmiddle_close.value) > last_candle["bb_middleband2_40"])
+                and (last_candle['close'] > last_candle['sma_9'])
+                and (last_candle['close'] > last_candle['ema_24'] * self.high_offset_2.value)
+                and (last_candle['rsi'] > 50)
+                and (last_candle['rsi_fast'] > last_candle['rsi_slow'])
         ):
-            return f"cluc_sell( {buy_tag})"
+            if (
+                    (last_candle['close'] > last_candle['bb_middleband2'])
+            ):
+                if trade.id not in TMP_HOLD:
+                    TMP_HOLD.append(trade.id)
 
-        if (
-                (current_profit < 0.019)
-                and (last_candle['close'] > last_candle['ema_49'] * 1.006)
-        ):
-            return f"sell_offset2( {buy_tag})"
-
-        # for i in sell_offset_open:
-        #     if trade.id == i and (last_candle["close"] < last_candle["bb_middleband2"]):
-        #         return f"sell_offset_drop_bb_mid( {buy_tag})"
+        # start cross under bb mid to# sell
+        for i in TMP_HOLD:
+            if trade.id == i and (last_candle["close"] < last_candle["bb_middleband2"]):
+                TMP_HOLD.remove(i)
+                return "sell_drop_bb_mid"
 
     ############################################################################
 
@@ -796,25 +737,6 @@ class BBMod1(IStrategy):
         conditions = []
         dataframe.loc[:, 'buy_tag'] = ''
 
-        is_dip = (
-                (dataframe[f'rmi_length_{self.buy_rmi_length.value}'] < self.buy_rmi.value) &
-                (dataframe[f'cci_length_{self.buy_cci_length.value}'] <= self.buy_cci.value) &
-                (dataframe['srsi_fk'] < self.buy_srsi_fk.value)
-            )
-
-        # is_sqz_off = (
-        #         (dataframe['bb_lowerband2'] < dataframe['kc_lowerband_28_1']) &
-        #         (dataframe['bb_upperband2'] > dataframe['kc_upperband_28_1'])
-        #     )
-
-        is_break = (
-
-                (dataframe['bb_delta'] > self.buy_bb_delta.value) &
-                (dataframe['bb_width'] > self.buy_bb_width.value) &
-                (dataframe['closedelta'] > dataframe['close'] * 17.922 / 1000) &  # use origin bb_rpb_tsl value
-                (dataframe['close'] < dataframe['bb_lowerband3'] * self.buy_bb_factor.value)
-            )
-
         is_local_uptrend = (                                              # from NFI next gen, credit goes to @iterativ
                 (dataframe['ema_26'] > dataframe['ema_12']) &
                 (dataframe['ema_26'] - dataframe['ema_12'] > dataframe['open'] * self.buy_ema_diff.value) &
@@ -849,23 +771,6 @@ class BBMod1(IStrategy):
                 (dataframe['rsi'] < self.buy_rsi.value)
             )
 
-        # is_ewo_2 = (
-        #         (dataframe['rsi_fast'] < self.buy_rsi_fast_ewo_2.value) &
-        #         (dataframe['close'] < dataframe['ema_8'] * self.buy_ema_low_2.value) &
-        #         (dataframe['EWO'] > self.buy_ewo_high_2.value) &
-        #         (dataframe['close'] < dataframe['ema_16'] * self.buy_ema_high_2.value) &
-        #         (dataframe['rsi'] < self.buy_rsi_ewo_2.value)
-        #     )
-
-        # is_r_deadfish = (                                                                             # reverse deadfish
-        #         (dataframe['ema_100'] < dataframe['ema_200'] * self.buy_r_deadfish_ema.value) &
-        #         (dataframe['bb_width'] > self.buy_r_deadfish_bb_width.value) &
-        #         (dataframe['close'] < dataframe['bb_middleband2'] * self.buy_r_deadfish_bb_factor.value) &
-        #         (dataframe['volume_mean_12'] > dataframe['volume_mean_24'] * self.buy_r_deadfish_volume_factor.value) &
-        #         (dataframe['cti'] < self.buy_r_deadfish_cti.value) &
-        #         (dataframe['r_14'] < self.buy_r_deadfish_r14.value)
-        #     )
-
         is_clucha = (
                 (dataframe['rocr_1h'].gt(self.buy_clucha_rocr_1h.value)) &
                 (dataframe['bb_lowerband2_40'].shift().gt(0)) &
@@ -874,12 +779,6 @@ class BBMod1(IStrategy):
                 (dataframe['tail'].lt(dataframe['bb_delta_cluc'] * self.buy_clucha_bbdelta_tail.value)) &
                 (dataframe['ha_close'].lt(dataframe['bb_lowerband2_40'].shift())) &
                 (dataframe['ha_close'].le(dataframe['ha_close'].shift()))
-        )
-
-        is_clucha2 = (
-                (dataframe['rocr_1h'].gt(self.buy_clucha_rocr_1h.value)) &
-                (dataframe['ha_close'] < dataframe['ema_slow']) &
-                (dataframe['ha_close'] < self.buy_clucha_close_bblower.value * dataframe['bb_lowerband2_40'])
         )
 
         is_cofi = (                           # Modified from cofi, credit goes to original author "slack user CofiBit"
@@ -893,27 +792,9 @@ class BBMod1(IStrategy):
                 (dataframe['r_14'] < self.buy_cofi_r14.value)
             )
 
-        # is_gumbo = (                                     # Modified from gumbo1, creadit goes to original author @raph92
-        #         (dataframe['EWO'] < self.buy_gumbo_ewo_low.value) &
-        #         (dataframe['bb_middleband2_1h'] >= dataframe['T3_1h']) &
-        #         (dataframe['T3'] <= dataframe['ema_8'] * self.buy_gumbo_ema.value) &
-        #         (dataframe['cti'] < self.buy_gumbo_cti.value) &
-        #         (dataframe['r_14'] < self.buy_gumbo_r14.value)
-        #     )
-
-        # is_sqzmom = (          # Modified from squeezeMomentum, credit goes to original author @LazyBear of TradingView
-        #         is_sqz_off &
-        #         (dataframe['linreg_val_20'].shift(2) > dataframe['linreg_val_20'].shift(1)) &
-        #         (dataframe['linreg_val_20'].shift(1) < dataframe['linreg_val_20']) &
-        #         (dataframe['linreg_val_20'] < 0) &
-        #         (dataframe['close'] < dataframe['ema_13'] * self.buy_sqzmom_ema.value) &
-        #         (dataframe['EWO'] < self.buy_sqzmom_ewo.value) &
-        #         (dataframe['r_14'] < self.buy_sqzmom_r14.value)
-        #     )
-
         # NFI quick mode, credit goes to @iterativ
 
-        is_nfi_32 = (  # NFIX 26
+        is_nfi_32 = (
                 (dataframe['rsi_slow'] < dataframe['rsi_slow'].shift(1)) &
                 (dataframe['rsi_fast'] < 46) &
                 (dataframe['rsi'] > 19) &
@@ -930,14 +811,6 @@ class BBMod1(IStrategy):
                 (dataframe['volume'] < (dataframe['volume_mean_4'] * 2.5))
             )
 
-        is_nfi_38 = (
-                (dataframe['pm'] > dataframe['pmax_thresh']) &
-                (dataframe['close'] < dataframe['sma_75'] * 0.98) &
-                (dataframe['EWO'] < -4.4) &
-                (dataframe['cti'] < -0.95) &
-                (dataframe['r_14'] < -97) &
-                (dataframe['crsi_1h'] > 0.5)
-            )
 
         is_nfix_5 = (
                 (dataframe['ema_200_1h'] > dataframe['ema_200_1h'].shift(12)) &
@@ -1000,11 +873,11 @@ class BBMod1(IStrategy):
         )
 
         # Additional Check
-        is_bb_checked = is_dip & is_break
+        # is_bb_checked = is_dip & is_break
 
-        # Condition Append
-        conditions.append(is_bb_checked)                                           # ~2.32 / 91.1% / 46.27%      D
-        dataframe.loc[is_bb_checked, 'buy_tag'] += 'bb '
+        # # Condition Append
+        # conditions.append(is_bb_checked)                                           # ~2.32 / 91.1% / 46.27%      D
+        # dataframe.loc[is_bb_checked, 'buy_tag'] += 'bb '
 
         conditions.append(is_local_uptrend)                                        # ~3.28 / 92.4% / 69.72%
         dataframe.loc[is_local_uptrend, 'buy_tag'] += 'local_uptrend '
@@ -1015,35 +888,17 @@ class BBMod1(IStrategy):
         conditions.append(is_ewo)                                                  # ~0.92 / 92.0% / 43.74%      D
         dataframe.loc[is_ewo, 'buy_tag'] += 'ewo '
 
-        # conditions.append(is_ewo_2)                                                 # ~2.86 / 91.5% / 33.31%     D
-        # dataframe.loc[is_ewo_2, 'buy_tag'] += 'ewo2 '
-
-        # conditions.append(is_r_deadfish)                                           # ~0.99 / 86.9% / 21.93%      D
-        # dataframe.loc[is_r_deadfish, 'buy_tag'] += 'r_deadfish '
-
         conditions.append(is_clucha)                                               # ~7.2 / 92.5% / 97.98%       D
         dataframe.loc[is_clucha, 'buy_tag'] += 'clucHA '
 
-        conditions.append(is_clucha2)
-        dataframe.loc[is_clucha2, 'buy_tag'] += 'clucHA2 '
-
         conditions.append(is_cofi)                                                 # ~0.4 / 94.4% / 9.59%        D
         dataframe.loc[is_cofi, 'buy_tag'] += 'cofi '
-
-        # conditions.append(is_gumbo)                                                # ~2.63 / 90.6% / 41.49%      D
-        # dataframe.loc[is_gumbo, 'buy_tag'] += 'gumbo '
-
-        # conditions.append(is_sqzmom)                                               # ~3.14 / 92.4% / 64.14%      D
-        # dataframe.loc[is_sqzmom, 'buy_tag'] += 'sqzmom '
 
         conditions.append(is_nfi_32)                                               # ~0.78 / 92.0 % / 37.41%     D
         dataframe.loc[is_nfi_32, 'buy_tag'] += 'nfi_32 '
 
         conditions.append(is_nfi_33)                                               # ~0.11 / 100%                D
         dataframe.loc[is_nfi_33, 'buy_tag'] += 'nfi_33 '
-
-        conditions.append(is_nfi_38)                                               # ~1.13 / 88.5% / 31.34%      D
-        dataframe.loc[is_nfi_38, 'buy_tag'] += 'nfi_38 '
 
         conditions.append(is_nfix_5)                                               # ~0.25 / 97.7% / 6.53%       D
         dataframe.loc[is_nfix_5, 'buy_tag'] += 'nfix_5 '
@@ -1203,7 +1058,7 @@ def t3(dataframe, length=5):
     return df['T3Average']
 
 
-class BBMod1DCA(BBMod1):
+class BBMod1DCA(BBMod):
     position_adjustment_enable = True
 
     max_rebuy_orders = 2
