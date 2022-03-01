@@ -8,6 +8,6 @@ I will update the Gateio blacklist regularly.
 ClucHAnix and ClucHAnix_5m had added dca class.
 
 dry run status:
-BBMod, ClucHAnixV2, VWAP start 2020.03.01
+BBMod, ClucHAnixV2, VWAP start 2022.03.01
 
 are you ok?
