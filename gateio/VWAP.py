@@ -10,6 +10,9 @@ import talib.abstract as ta
 # --------------------------------
 
 
+TMP_HOLD = []
+
+
 # VWAP bands
 def VWAPB(dataframe, window_size=20, num_of_std=1):
     df = dataframe.copy()
@@ -129,7 +132,13 @@ class VWAP(IStrategy):
             if (
                     (last_candle['close'] > last_candle['bb_middleband'])
             ):
-                return "cross_bb_mid"
+                if trade.id not in TMP_HOLD:
+                    TMP_HOLD.append(trade.id)
+
+        for i in TMP_HOLD:
+            if trade.id == i and (last_candle["close"] < last_candle["bb_middleband"]):  # stop cross bb mid to sell
+                TMP_HOLD.remove(i)
+                return "sell_drop_bb_mid"
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
@@ -150,6 +159,9 @@ class VWAP(IStrategy):
         return dataframe
 
     def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+
+        dataframe.loc[:, 'buy_tag'] = 'vwap'
+
         dataframe.loc[
             (
                 (dataframe['close'] < dataframe['vwap_low']) &
