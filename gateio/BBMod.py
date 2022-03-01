@@ -793,8 +793,6 @@ class BBMod(IStrategy):
                 (dataframe['r_14'] < self.buy_cofi_r14.value)
             )
 
-        # NFI quick mode, credit goes to @iterativ
-
         is_nfi_32 = (
                 (dataframe['rsi_slow'] < dataframe['rsi_slow'].shift(1)) &
                 (dataframe['rsi_fast'] < 46) &
@@ -811,7 +809,6 @@ class BBMod(IStrategy):
                 (dataframe['r_14'] < -98.0) &
                 (dataframe['volume'] < (dataframe['volume_mean_4'] * 2.5))
             )
-
 
         is_nfix_5 = (
                 (dataframe['ema_200_1h'] > dataframe['ema_200_1h'].shift(12)) &
@@ -873,13 +870,6 @@ class BBMod(IStrategy):
                 (dataframe['volume'] > 0)
         )
 
-        # Additional Check
-        # is_bb_checked = is_dip & is_break
-
-        # # Condition Append
-        # conditions.append(is_bb_checked)                                           # ~2.32 / 91.1% / 46.27%      D
-        # dataframe.loc[is_bb_checked, 'buy_tag'] += 'bb '
-
         conditions.append(is_local_uptrend)                                        # ~3.28 / 92.4% / 69.72%
         dataframe.loc[is_local_uptrend, 'buy_tag'] += 'local_uptrend '
 
@@ -930,7 +920,7 @@ class BBMod(IStrategy):
         return dataframe
 
     def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        dataframe.loc[(dataframe['volume'] > 0), 'sell'] = 0
+        dataframe.loc[(), 'sell'] = 1
         return dataframe
 
 
