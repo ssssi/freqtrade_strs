@@ -1,5 +1,5 @@
 # freqtrade-strs
-Some strategies collect.
+Some strategies.
 
 I can only use gateio, so my all test in gateio.
 
