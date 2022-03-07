@@ -124,7 +124,7 @@ class VWAP(IStrategy):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
 
         last_candle = dataframe.iloc[-1].squeeze()
-        previous_candle_1 = dataframe.iloc[-2]
+        previous_candle_1 = dataframe.iloc[-2].squeeze()
 
         if current_profit >= 0.02:
             return None
