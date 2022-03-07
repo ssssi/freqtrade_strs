@@ -199,24 +199,29 @@ class ClucHAnixV2(IStrategy):
 
         dataframe.loc[
             (
-                    (dataframe['rocr_1h'].gt(params['rocr-1h'])) &
                     (
-                            (dataframe['macd_1d'] > dataframe['macdsignal_1d']) |
-                            (dataframe['close_1d'] > dataframe['ema90_1d'])
-                    )
-            ) &
-            ((
-                     (dataframe['lower'].shift().gt(0)) &
-                     (dataframe['bbdelta'].gt(dataframe['ha_close'] * params['bbdelta-close'])) &
-                     (dataframe['closedelta'].gt(dataframe['ha_close'] * params['closedelta-close'])) &
-                     (dataframe['tail'].lt(dataframe['bbdelta'] * params['bbdelta-tail'])) &
-                     (dataframe['ha_close'].lt(dataframe['lower'].shift())) &
-                     (dataframe['ha_close'].le(dataframe['ha_close'].shift()))
-             ) |
-             (
-                     (dataframe['ha_close'] < dataframe['ema_slow']) &
-                     (dataframe['ha_close'] < params['close-bblower'] * dataframe['bb_lowerband'])
-             )),
+                        ((
+                             (dataframe['macd_1d'] > dataframe['macdsignal_1d']) &
+                             (dataframe['macdhist_1d'] > dataframe['macdhist_1d'].shift())
+                         ) |
+
+                         (
+                             (dataframe['close_1d'] > dataframe['ema90_1d'])
+                         ))
+                    ) &
+                    ((
+                             (dataframe['rocr_1h'].gt(params['rocr-1h'])) &
+                             (dataframe['lower'].shift().gt(0)) &
+                             (dataframe['bbdelta'].gt(dataframe['ha_close'] * params['bbdelta-close'])) &
+                             (dataframe['closedelta'].gt(dataframe['ha_close'] * params['closedelta-close'])) &
+                             (dataframe['tail'].lt(dataframe['bbdelta'] * params['bbdelta-tail'])) &
+                             (dataframe['ha_close'].lt(dataframe['lower'].shift())) &
+                             (dataframe['ha_close'].le(dataframe['ha_close'].shift()))
+                     ) |
+                     (
+                             (dataframe['ha_close'] < dataframe['ema_slow']) &
+                             (dataframe['ha_close'] < params['close-bblower'] * dataframe['bb_lowerband'])
+                     ))),
             'buy'
         ] = 1
 

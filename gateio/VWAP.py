@@ -124,6 +124,7 @@ class VWAP(IStrategy):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
 
         last_candle = dataframe.iloc[-1].squeeze()
+        previous_candle_1 = dataframe.iloc[-2]
 
         if current_profit >= 0.02:
             return None
@@ -139,8 +140,18 @@ class VWAP(IStrategy):
         # start cross under bb mid. --sell
         for i in TMP_HOLD:
             if trade.id == i and (last_candle["close"] < last_candle["bb_middleband"]):
-                TMP_HOLD.remove(i)
-                return "sell_drop_bb_mid"
+                if previous_candle_1["close"] < previous_candle_1["bb_middleband"]:
+                    TMP_HOLD.remove(i)
+                    return "sell_drop_bb_mid"
+
+            if trade.id == i:
+                if (
+                        (current_profit < 0.02)
+                        and (last_candle['rsi'] > 65)
+                        and (last_candle['close'] < previous_candle_1['close'])
+                ):
+                    TMP_HOLD.remove(i)
+                    return "rsi_sell"
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
