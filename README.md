@@ -9,6 +9,6 @@ dry run status:
 
 BinHV27(or)  BinHV27(trailing)  BinHV45(hypered)
 
-if you want look dry run result. you can contact me in discard.
+if you want look dry run result. you can contact me in freqtrade official discard.
 
 name:E0V1E
