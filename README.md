@@ -7,7 +7,7 @@ I will update the Gateio blacklist regularly.
 
 dry run status:
 
-BinHV27(or)  BinHV27(trailing)  BinHV45(hypered)
+BinHV27(or)  BinHV27(trailing)  ClucHAnixV2
 
 if you want look dry run result. you can contact me in freqtrade official discard.
 
