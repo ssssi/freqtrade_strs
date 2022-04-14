@@ -7,8 +7,6 @@ I will update the Gateio blacklist regularly.
 
 dry run status:
 
-BinHV27(or)  BinHV27(trailing)  ClucHAnixV2
-
-if you want look dry run result. you can contact me in freqtrade official discard.
+BinHV27
 
 name:E0V1E
