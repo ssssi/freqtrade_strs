@@ -72,6 +72,7 @@ class BBMod(IStrategy):
         "buy_ema_diff_local_dip": 0.024,
         "buy_ema_high_local_dip": 1.014,
         "buy_rsi_local_dip": 21,
+        "buy_crsi_local_dip": 10,
         ##
         "buy_nfix_39_ema": 0.912
     }
@@ -118,26 +119,26 @@ class BBMod(IStrategy):
     use_custom_stoploss = True
 
     # Buy params
-    is_optimize_local_uptrend = False
+    is_optimize_local_uptrend = True
     buy_ema_diff = DecimalParameter(0.022, 0.027, default=0.025, optimize=is_optimize_local_uptrend)
     buy_bb_factor = DecimalParameter(0.990, 0.999, default=0.995, optimize=is_optimize_local_uptrend)
     buy_closedelta = DecimalParameter(12.0, 18.0, default=15.0, optimize=is_optimize_local_uptrend)
 
-    is_optimize_local_dip = False
+    is_optimize_local_dip = True
     buy_ema_diff_local_dip = DecimalParameter(0.022, 0.027, default=0.025, optimize=is_optimize_local_dip)
     buy_ema_high_local_dip = DecimalParameter(0.90, 1.2, default=0.942, optimize=is_optimize_local_dip)
     buy_closedelta_local_dip = DecimalParameter(12.0, 18.0, default=15.0, optimize=is_optimize_local_dip)
     buy_rsi_local_dip = IntParameter(15, 45, default=28, optimize=is_optimize_local_dip)
     buy_crsi_local_dip = IntParameter(10, 18, default=10, optimize=is_optimize_local_dip)
 
-    is_optimize_ewo = False
+    is_optimize_ewo = True
     buy_rsi_fast = IntParameter(35, 50, default=45, optimize=is_optimize_ewo)
     buy_rsi = IntParameter(15, 35, default=35, optimize=is_optimize_ewo)
     buy_ewo = DecimalParameter(-6.0, 5, default=-5.585, optimize=is_optimize_ewo)
     buy_ema_low = DecimalParameter(0.9, 0.99, default=0.942, optimize=is_optimize_ewo)
     buy_ema_high = DecimalParameter(0.95, 1.2, default=1.084, optimize=is_optimize_ewo)
 
-    is_optimize_nfix_39 = False
+    is_optimize_nfix_39 = True
     buy_nfix_39_ema = DecimalParameter(0.9, 1.2, default=0.97, optimize=is_optimize_nfix_39)
 
     # rng sell
