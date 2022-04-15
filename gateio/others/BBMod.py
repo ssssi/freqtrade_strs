@@ -1,6 +1,3 @@
-# --- Do not remove these libs ---
-from typing import Optional
-
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy as np
 import talib.abstract as ta
@@ -76,12 +73,6 @@ class BBMod(IStrategy):
         "buy_ema_high_local_dip": 1.014,
         "buy_rsi_local_dip": 21,
         ##
-        "buy_clucha_bbdelta_close": 0.049,
-        "buy_clucha_bbdelta_tail": 1.146,
-        "buy_clucha_close_bblower": 0.018,
-        "buy_clucha_closedelta_close": 0.017,
-        "buy_clucha_rocr_1h": 0.526,
-        ##
         "buy_nfix_39_ema": 0.912
     }
 
@@ -108,11 +99,11 @@ class BBMod(IStrategy):
     startup_candle_count = 120
 
     order_types = {
-        'buy': 'limit',
-        'sell': 'limit',
-        'emergencysell': 'limit',
-        'forcebuy': "limit",
-        'forcesell': 'limit',
+        'entry': 'limit',
+        'exit': 'limit',
+        'emergency_exit': 'limit',
+        'force_entry': 'limit',
+        'force_exit': "limit",
         'stoploss': 'limit',
         'stoploss_on_exchange': False,
 
@@ -125,12 +116,11 @@ class BBMod(IStrategy):
 
     # Custom stoploss
     use_custom_stoploss = True
-    use_sell_signal = True
 
     # Buy params
     is_optimize_local_uptrend = False
     buy_ema_diff = DecimalParameter(0.022, 0.027, default=0.025, optimize=is_optimize_local_uptrend)
-    buy_bb_factor = DecimalParameter(0.990, 0.999, default=0.995, optimize=False)
+    buy_bb_factor = DecimalParameter(0.990, 0.999, default=0.995, optimize=is_optimize_local_uptrend)
     buy_closedelta = DecimalParameter(12.0, 18.0, default=15.0, optimize=is_optimize_local_uptrend)
 
     is_optimize_local_dip = False
@@ -138,7 +128,7 @@ class BBMod(IStrategy):
     buy_ema_high_local_dip = DecimalParameter(0.90, 1.2, default=0.942, optimize=is_optimize_local_dip)
     buy_closedelta_local_dip = DecimalParameter(12.0, 18.0, default=15.0, optimize=is_optimize_local_dip)
     buy_rsi_local_dip = IntParameter(15, 45, default=28, optimize=is_optimize_local_dip)
-    buy_crsi_local_dip = IntParameter(10, 18, default=10, optimize=False)
+    buy_crsi_local_dip = IntParameter(10, 18, default=10, optimize=is_optimize_local_dip)
 
     is_optimize_ewo = False
     buy_rsi_fast = IntParameter(35, 50, default=45, optimize=is_optimize_ewo)
@@ -147,18 +137,11 @@ class BBMod(IStrategy):
     buy_ema_low = DecimalParameter(0.9, 0.99, default=0.942, optimize=is_optimize_ewo)
     buy_ema_high = DecimalParameter(0.95, 1.2, default=1.084, optimize=is_optimize_ewo)
 
-    is_optimize_clucha = False
-    buy_clucha_bbdelta_close = DecimalParameter(0.01, 0.05, default=0.02206, optimize=is_optimize_clucha)
-    buy_clucha_bbdelta_tail = DecimalParameter(0.7, 1.2, default=1.02515, optimize=is_optimize_clucha)
-    buy_clucha_closedelta_close = DecimalParameter(0.001, 0.05, default=0.04401, optimize=is_optimize_clucha)
-    buy_clucha_rocr_1h = DecimalParameter(0.1, 1.0, default=0.47782, optimize=is_optimize_clucha)
-    buy_clucha_close_bblower = DecimalParameter(0.0005, 0.02, default=0.00799, optimize=is_optimize_clucha)
-
-    is_optimize_nfix_39 = True
+    is_optimize_nfix_39 = False
     buy_nfix_39_ema = DecimalParameter(0.9, 1.2, default=0.97, optimize=is_optimize_nfix_39)
 
     # rng sell
-    high_offset_2 = DecimalParameter(0.99, 1.5, default=sell_params['high_offset_2'], space='sell', optimize=True)
+    high_offset_2 = DecimalParameter(0.99, 1.5, default=sell_params['high_offset_2'], space='sell', optimize=False)
 
     # hard stoploss profit
     pHSL = DecimalParameter(-0.200, -0.040, default=-0.08, decimals=3, space='sell', load=True)
@@ -204,16 +187,8 @@ class BBMod(IStrategy):
         informative_1h['bb_width'] = ((informative_1h['bb_upperband2'] - informative_1h['bb_lowerband2']) /
                                       informative_1h['bb_middleband2'])
 
-        # ROC
-        informative_1h['roc'] = ta.ROC(dataframe, timeperiod=9)
-
         # RSI
         informative_1h['rsi'] = ta.RSI(informative_1h, timeperiod=14)
-
-        # Heikin Ashi
-        inf_heikinashi = qtpylib.heikinashi(informative_1h)
-        informative_1h['ha_close'] = inf_heikinashi['close']
-        informative_1h['rocr'] = ta.ROCR(informative_1h['ha_close'], timeperiod=168)
 
         # Elliot
         informative_1h['EWO'] = ewo(informative_1h, 50, 200)
@@ -245,9 +220,9 @@ class BBMod(IStrategy):
         if sl_profit >= current_profit:
             return -0.99
 
-        return stoploss_from_open(sl_profit, current_profit)
+        return stoploss_from_open(sl_profit, current_profit, is_short=trade.is_short)
 
-    def custom_sell(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
+    def custom_exit(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
                     current_profit: float, **kwargs):
 
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
@@ -272,20 +247,10 @@ class BBMod(IStrategy):
                     TMP_HOLD.append(trade.id)
                     return None
 
-        # start cross under bb mid to sell
         for i in TMP_HOLD:
-            if trade.id == i and (last_candle["close"] < last_candle["bb_middleband2"]):
+            if trade.id == i and (last_candle['close'] < previous_candle_1['close']):
                 TMP_HOLD.remove(i)
-                return "sell_drop_bb_mid"
-
-            if trade.id == i:
-                if (
-                        (current_profit < 0.02)
-                        and (last_candle['rsi'] > 65)
-                        and (last_candle['close'] < previous_candle_1['close'])
-                ):
-                    TMP_HOLD.remove(i)
-                    return "rsi_sell"
+                return "sell_drop"
 
     @staticmethod
     def normal_tf_indicators(dataframe: DataFrame) -> DataFrame:
@@ -356,15 +321,7 @@ class BBMod(IStrategy):
 
         # ClucHA
         dataframe['bb_delta_cluc'] = (dataframe['bb_middleband2_40'] - dataframe['bb_lowerband2_40']).abs()
-        dataframe['ha_closedelta'] = (dataframe['ha_close'] - dataframe['ha_close'].shift()).abs()
         dataframe['tail'] = (dataframe['ha_close'] - dataframe['ha_low']).abs()
-        dataframe['ema_slow'] = ta.EMA(dataframe['ha_close'], timeperiod=50)
-        dataframe['ema_fast'] = ta.EMA(dataframe['ha_close'], timeperiod=3)
-        dataframe['rocr'] = ta.ROCR(dataframe['ha_close'], timeperiod=28)
-
-        # fisher
-        rsi = 0.1 * (dataframe['rsi'] - 50)
-        dataframe["fisher"] = (np.exp(2 * rsi) - 1) / (np.exp(2 * rsi) + 1)
 
         # vmap indicators
         vwap_low, vwap, vwap_high = vwap_b(dataframe, 20, 1)
@@ -386,10 +343,10 @@ class BBMod(IStrategy):
 
         return dataframe
 
-    def populate_buy_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         conditions = []
-        dataframe.loc[:, 'buy_tag'] = ''
+        dataframe.loc[:, 'enter_tag'] = ''
 
         is_local_uptrend = (  # from NFI next gen, credit goes to @iterativ
                 (dataframe['ema_26'] > dataframe['ema_12']) &
@@ -425,16 +382,6 @@ class BBMod(IStrategy):
                 (dataframe['rsi'] < self.buy_rsi.value)
         )
 
-        is_clucha = (
-                (dataframe['rocr_1h'].gt(self.buy_clucha_rocr_1h.value)) &
-                (dataframe['bb_lowerband2_40'].shift().gt(0)) &
-                (dataframe['bb_delta_cluc'].gt(dataframe['ha_close'] * self.buy_clucha_bbdelta_close.value)) &
-                (dataframe['ha_closedelta'].gt(dataframe['ha_close'] * self.buy_clucha_closedelta_close.value)) &
-                (dataframe['tail'].lt(dataframe['bb_delta_cluc'] * self.buy_clucha_bbdelta_tail.value)) &
-                (dataframe['ha_close'].lt(dataframe['bb_lowerband2_40'].shift())) &
-                (dataframe['ha_close'].le(dataframe['ha_close'].shift()))
-        )
-
         is_nfi_32 = (
                 (dataframe['rsi_slow'] < dataframe['rsi_slow'].shift(1)) &
                 (dataframe['rsi_fast'] < 46) &
@@ -466,76 +413,39 @@ class BBMod(IStrategy):
         )
 
         conditions.append(is_local_uptrend)  # ~3.28 / 92.4% / 69.72%
-        dataframe.loc[is_local_uptrend, 'buy_tag'] += 'local_uptrend '
+        dataframe.loc[is_local_uptrend, 'enter_tag'] += 'local_uptrend '
 
         conditions.append(is_local_dip)  # ~0.76 / 91.1% / 15.54%
-        dataframe.loc[is_local_dip, 'buy_tag'] += 'local_dip '
+        dataframe.loc[is_local_dip, 'enter_tag'] += 'local_dip '
 
         conditions.append(is_ewo)  # ~0.92 / 92.0% / 43.74%      D
-        dataframe.loc[is_ewo, 'buy_tag'] += 'ewo '
-
-        conditions.append(is_clucha)  # ~7.2 / 92.5% / 97.98%       D
-        dataframe.loc[is_clucha, 'buy_tag'] += 'clucHA '
+        dataframe.loc[is_ewo, 'enter_tag'] += 'ewo '
 
         conditions.append(is_nfi_32)  # ~0.78 / 92.0 % / 37.41%     D
-        dataframe.loc[is_nfi_32, 'buy_tag'] += 'nfi_32 '
+        dataframe.loc[is_nfi_32, 'enter_tag'] += 'nfi_32 '
 
         conditions.append(is_nfix_39)  # ~5.33 / 91.8% / 58.57%      D
-        dataframe.loc[is_nfix_39, 'buy_tag'] += 'nfix_39 '
+        dataframe.loc[is_nfix_39, 'enter_tag'] += 'nfix_39 '
 
         conditions.append(is_vwap)
-        dataframe.loc[is_vwap, 'buy_tag'] += 'vwap '
+        dataframe.loc[is_vwap, 'enter_tag'] += 'vwap '
 
         conditions.append(is_local_uptrend2)
-        dataframe.loc[is_local_uptrend2, 'buy_tag'] += 'local_uptrend2 '
+        dataframe.loc[is_local_uptrend2, 'enter_tag'] += 'local_uptrend2 '
 
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x | y, conditions),
-                'buy'] = 1
+                'enter_long'] = 1
 
         return dataframe
 
-    def populate_sell_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        dataframe.loc[(), 'sell'] = 1
+    def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe.loc[(), ['exit_long', 'exit_tag']] = (0, 'long_out')
         return dataframe
 
+    def leverage(self, pair: str, current_time: datetime, current_rate: float,
+                 proposed_leverage: float, max_leverage: float, side: str,
+                 **kwargs) -> float:
 
-class BBMod1DCA(BBMod):
-    position_adjustment_enable = True
-
-    max_rebuy_orders = 2
-    max_rebuy_multiplier = 3
-
-    # This is called when placing the initial order (opening trade)
-    def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
-                            proposed_stake: float, min_stake: float, max_stake: float,
-                            entry_tag: Optional[str], **kwargs) -> float:
-
-        if (self.config['position_adjustment_enable'] is True) and (self.config['stake_amount'] == 'unlimited'):
-            return proposed_stake / self.max_rebuy_multiplier
-        else:
-            return proposed_stake
-
-    def adjust_trade_position(self, trade: Trade, current_time: datetime,
-                              current_rate: float, current_profit: float, min_stake: float,
-                              max_stake: float, **kwargs):
-
-        if (self.config['position_adjustment_enable'] is False) or (current_profit > -0.03):
-            return None
-
-        filled_buys = trade.select_filled_orders('buy')
-        count_of_buys = len(filled_buys)
-
-        # Maximum 2 rebuys, equal stake as the original
-        if 0 < count_of_buys <= self.max_rebuy_orders:
-            try:
-                # This returns first order stake size
-                stake_amount = filled_buys[0].cost
-                # This then calculates current safety order size
-                stake_amount = stake_amount
-                return stake_amount
-            except Exception as e:
-                return None
-
-        return None
+        return 1.0
