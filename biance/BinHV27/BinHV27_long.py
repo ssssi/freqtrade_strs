@@ -11,7 +11,7 @@ import talib.abstract as ta
 import numpy  # noqa
 
 
-class BinHV27(IStrategy):
+class BinHV27_long(IStrategy):
     """
 
         strategy sponsored by user BinH from slack
@@ -19,7 +19,7 @@ class BinHV27(IStrategy):
     """
 
     minimal_roi = {
-        "0": 100
+        "0": 1
     }
 
     buy_params = {
@@ -35,11 +35,14 @@ class BinHV27(IStrategy):
 
     sell_params = {
         # custom stop loss params
-        "pHSL": -0.99,
-        "pPF_1": 0.05,
-        "pPF_2": 0.1,
-        "pSL_1": 0.045,
-        "pSL_2": 0.08,
+        "pHSL": -0.25,
+        "pPF_1": 0.012,
+        "pPF_2": 0.05,
+        "pSL_1": 0.01,
+        "pSL_2": 0.04,
+        
+        # leverage set  
+        "leverage_num": 1,
 
         # sell params
         'emarsi1': 75,
@@ -47,7 +50,7 @@ class BinHV27(IStrategy):
         'emarsi2': 80,
         'emarsi3': 75,
 
-        # sell optional. in dry all set False
+        # sell optional
         "sell_1": True,
         "sell_2": True,
         "sell_3": True,
@@ -64,6 +67,8 @@ class BinHV27(IStrategy):
     # default False
     use_custom_stoploss = True
 
+    can_short = False
+
     order_types = {
         'entry': 'market',
         'exit': 'market',
@@ -78,34 +83,40 @@ class BinHV27(IStrategy):
     }
 
     # buy params
-    buy_adx1 = IntParameter(low=10, high=100, default=25, space='buy', optimize=True)
-    buy_emarsi1 = IntParameter(low=10, high=100, default=20, space='buy', optimize=True)
-    buy_adx2 = IntParameter(low=20, high=100, default=30, space='buy', optimize=True)
-    buy_emarsi2 = IntParameter(low=20, high=100, default=20, space='buy', optimize=True)
-    buy_adx3 = IntParameter(low=10, high=100, default=35, space='buy', optimize=True)
-    buy_emarsi3 = IntParameter(low=10, high=100, default=20, space='buy', optimize=True)
-    buy_adx4 = IntParameter(low=20, high=100, default=30, space='buy', optimize=True)
-    buy_emarsi4 = IntParameter(low=20, high=100, default=25, space='buy', optimize=True)
+    buy_optimize = True
+    buy_adx1 = IntParameter(low=10, high=100, default=25, space='buy', optimize=buy_optimize)
+    buy_emarsi1 = IntParameter(low=10, high=100, default=20, space='buy', optimize=buy_optimize)
+    buy_adx2 = IntParameter(low=20, high=100, default=30, space='buy', optimize=buy_optimize)
+    buy_emarsi2 = IntParameter(low=20, high=100, default=20, space='buy', optimize=buy_optimize)
+    buy_adx3 = IntParameter(low=10, high=100, default=35, space='buy', optimize=buy_optimize)
+    buy_emarsi3 = IntParameter(low=10, high=100, default=20, space='buy', optimize=buy_optimize)
+    buy_adx4 = IntParameter(low=20, high=100, default=30, space='buy', optimize=buy_optimize)
+    buy_emarsi4 = IntParameter(low=20, high=100, default=25, space='buy', optimize=buy_optimize)
 
     # trailing stoploss
     trailing_optimize = False
     pHSL = DecimalParameter(-0.990, -0.040, default=-0.08, decimals=3, space='sell', optimize=trailing_optimize)
-    pPF_1 = DecimalParameter(0.008, 0.050, default=0.016, decimals=3, space='sell', optimize=trailing_optimize)
-    pSL_1 = DecimalParameter(0.008, 0.050, default=0.011, decimals=3, space='sell', optimize=trailing_optimize)
-    pPF_2 = DecimalParameter(0.040, 0.100, default=0.080, decimals=3, space='sell', optimize=trailing_optimize)
-    pSL_2 = DecimalParameter(0.040, 0.100, default=0.040, decimals=3, space='sell', optimize=trailing_optimize)
+    pPF_1 = DecimalParameter(0.008, 0.100, default=0.016, decimals=3, space='sell', optimize=trailing_optimize)
+    pSL_1 = DecimalParameter(0.008, 0.100, default=0.011, decimals=3, space='sell', optimize=trailing_optimize)
+    pPF_2 = DecimalParameter(0.040, 0.200, default=0.080, decimals=3, space='sell', optimize=trailing_optimize)
+    pSL_2 = DecimalParameter(0.040, 0.200, default=0.040, decimals=3, space='sell', optimize=trailing_optimize)
 
     # sell params
-    adx2 = IntParameter(low=10, high=100, default=30, space='sell', optimize=True)
-    emarsi1 = IntParameter(low=10, high=100, default=75, space='sell', optimize=True)
-    emarsi2 = IntParameter(low=20, high=100, default=80, space='sell', optimize=True)
-    emarsi3 = IntParameter(low=20, high=100, default=75, space='sell', optimize=True)
+    sell_optimize = True
+    adx2 = IntParameter(low=10, high=100, default=30, space='sell', optimize=sell_optimize)
+    emarsi1 = IntParameter(low=10, high=100, default=75, space='sell', optimize=sell_optimize)
+    emarsi2 = IntParameter(low=20, high=100, default=80, space='sell', optimize=sell_optimize)
+    emarsi3 = IntParameter(low=20, high=100, default=75, space='sell', optimize=sell_optimize)
 
-    sell_1 = CategoricalParameter([True, False], default=True, space="sell", optimize=True)
-    sell_2 = CategoricalParameter([True, False], default=True, space="sell", optimize=True)
-    sell_3 = CategoricalParameter([True, False], default=True, space="sell", optimize=True)
-    sell_4 = CategoricalParameter([True, False], default=True, space="sell", optimize=True)
-    sell_5 = CategoricalParameter([True, False], default=True, space="sell", optimize=True)
+    sell2_optimize = True
+    sell_1 = CategoricalParameter([True, False], default=True, space="sell", optimize=sell2_optimize)
+    sell_2 = CategoricalParameter([True, False], default=True, space="sell", optimize=sell2_optimize)
+    sell_3 = CategoricalParameter([True, False], default=True, space="sell", optimize=sell2_optimize)
+    sell_4 = CategoricalParameter([True, False], default=True, space="sell", optimize=sell2_optimize)
+    sell_5 = CategoricalParameter([True, False], default=True, space="sell", optimize=sell2_optimize)
+
+    leverage_optimize = False
+    leverage_num = IntParameter(low=1, high=20, default=1, space='sell', optimize=leverage_optimize)
 
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
                         current_rate: float, current_profit: float, **kwargs) -> float:
@@ -128,15 +139,17 @@ class BinHV27(IStrategy):
         else:
             sl_profit = HSL
 
-        # Only for hyperopt invalid return
-        if sl_profit >= current_profit:
-            return -0.99
+        if self.can_short:
+            if (-1 + ((1 - sl_profit) / (1 - current_profit))) <= 0:
+                return 1
+        else:
+            if (1 - ((1 + sl_profit) / (1 + current_profit))) <= 0:
+                return 1
 
         return stoploss_from_open(sl_profit, current_profit, is_short=trade.is_short)
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe['rsi'] = numpy.nan_to_num(ta.RSI(dataframe, timeperiod=5))
-        dataframe['rsi_12'] = ta.RSI(dataframe, timeperiod=12)
         rsiframe = DataFrame(dataframe['rsi']).rename(columns={'rsi': 'close'})
         dataframe['emarsi'] = numpy.nan_to_num(ta.EMA(rsiframe, timeperiod=5))
         dataframe['adx'] = numpy.nan_to_num(ta.ADX(dataframe))
@@ -241,9 +254,12 @@ class BinHV27(IStrategy):
                 reduce(lambda x, y: x | y, conditions),
                 'enter_long'] = 1
 
+        # dataframe.loc[(), ['enter_long', 'enter_tag']] = (0, 'long_in')
+
         return dataframe
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        # dataframe.loc[(), ['exit_short', 'exit_tag']] = (0, 'short_out')
         dataframe.loc[(), ['exit_long', 'exit_tag']] = (0, 'long_out')
         return dataframe
 
@@ -312,4 +328,4 @@ class BinHV27(IStrategy):
                  proposed_leverage: float, max_leverage: float, side: str,
                  **kwargs) -> float:
 
-        return 10.0
+        return self.leverage_num.value
