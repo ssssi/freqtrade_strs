@@ -1,0 +1,8 @@
+Don't use more than five times the leverage.It is very high riskly.
+Triple leverage is recommended.
+
+how to do it:
+leverage_num x 3
+pPF_1 x 3
+pSL_1 x 3
+
