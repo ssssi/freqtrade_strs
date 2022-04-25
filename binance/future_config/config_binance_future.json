@@ -222,7 +222,8 @@
 //        }
      {
       "method": "StaticPairList"
-    }
+    },
+    {"method": "ShuffleFilter", "seed": 42}
     ],
   "edge": {
     "enabled": false,
