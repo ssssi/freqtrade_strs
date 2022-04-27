@@ -1,9 +1,6 @@
 {
   "strategy_name": "BinHV27_short",
   "params": {
-    "roi": {
-      "0": 1
-    },
     "stoploss": {
       "stoploss": -0.99
     },
@@ -24,24 +21,30 @@
       "buy_emarsi4": 80
     },
     "sell": {
-      "adx2": 21,
-      "emarsi1": 30,
-      "emarsi2": 71,
-      "emarsi3": 72,
-      "leverage_num": 3,
-      "pHSL": -0.75,
-      "pPF_1": 0.03,
-      "pPF_2": 0.09,
-      "pSL_1": 0.028,
-      "pSL_2": 0.08,
-      "sell_1": false,
-      "sell_2": true,
-      "sell_3": true,
-      "sell_4": true,
+      "adx2": 92,
+      "emarsi1": 69,
+      "emarsi2": 67,
+      "emarsi3": 97,
+      "leverage_num": 5,
+      "pHSL": -0.517,
+      "pPF_1": 0.013,
+      "pPF_2": 0.198,
+      "pSL_1": 0.015,
+      "pSL_2": 0.128,
+      "sell_1": true,
+      "sell_2": false,
+      "sell_3": false,
+      "sell_4": false,
       "sell_5": false
     },
-    "protection": {}
+    "protection": {},
+    "roi": {
+      "0": 0.06,
+      "27": 0.044,
+      "82": 0.031,
+      "185": 0
+    }
   },
   "ft_stratparam_v": 1,
-  "export_time": "2022-04-24 00:56:07.714550+00:00"
+  "export_time": "2022-04-26 02:07:18.148342+00:00"
 }
