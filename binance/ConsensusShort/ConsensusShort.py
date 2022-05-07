@@ -11,6 +11,10 @@ from technical.consensus import Consensus
 
 
 class ConsensusShort(IStrategy):
+    """
+    come from https://github.com/werkkrew/freqtrade-strategies/blob/main/strategies/archived/consensus_strat.py
+    Author:werkkrew
+    """
     minimal_roi = {
         "0": 1,
         "120": 0
