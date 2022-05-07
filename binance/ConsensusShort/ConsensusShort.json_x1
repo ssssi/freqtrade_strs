@@ -1,0 +1,33 @@
+{
+  "strategy_name": "ConsensusShort",
+  "params": {
+    "roi": {
+      "0": 1,
+      "360": 0
+    },
+    "stoploss": {
+      "stoploss": -0.99
+    },
+    "trailing": {
+      "trailing_stop": false,
+      "trailing_stop_positive": null,
+      "trailing_stop_positive_offset": 0.0,
+      "trailing_only_offset_is_reached": false
+    },
+    "buy": {
+      "buy_score_short": 39,
+      "leverage_num": 1
+    },
+    "sell": {
+      "sell_score_short": 49,
+      "pHSL": -0.107,
+      "pPF_1": 0.038,
+      "pPF_2": 0.162,
+      "pSL_1": 0.012,
+      "pSL_2": 0.129
+    },
+    "protection": {}
+  },
+  "ft_stratparam_v": 1,
+  "export_time": "2022-05-07 01:05:09.481444+00:00"
+}
