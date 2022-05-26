@@ -5,9 +5,10 @@ import pandas as pd  # noqa
 from pandas import DataFrame
 
 from freqtrade.persistence import Trade
-from freqtrade.strategy import IntParameter, DecimalParameter, stoploss_from_open
+from freqtrade.strategy import IntParameter, DecimalParameter, stoploss_from_open, merge_informative_pair
 from freqtrade.strategy.interface import IStrategy
 from technical.consensus import Consensus
+# import freqtrade.vendor.qtpylib.indicators as qtpylib
 
 
 class ConsensusShort(IStrategy):
@@ -79,6 +80,53 @@ class ConsensusShort(IStrategy):
     sell_optimize = False
     sell_score_short = IntParameter(low=0, high=100, default=45, space='sell', optimize=sell_optimize)
 
+    protect_optimize = True
+    cooldown_lookback = IntParameter(1, 240, default=5, space="protection", optimize=protect_optimize)
+    max_drawdown_lookback = IntParameter(1, 288, default=12, space="protection", optimize=protect_optimize)
+    max_drawdown_trade_limit = IntParameter(1, 20, default=5, space="protection", optimize=protect_optimize)
+    max_drawdown_stop_duration = IntParameter(1, 288, default=12, space="protection", optimize=protect_optimize)
+    max_allowed_drawdown = DecimalParameter(0.10, 0.50, default=0.20, decimals=2, space="protection",
+                                            optimize=protect_optimize)
+    stoploss_guard_lookback = IntParameter(1, 288, default=12, space="protection", optimize=protect_optimize)
+    stoploss_guard_trade_limit = IntParameter(1, 20, default=3, space="protection", optimize=protect_optimize)
+    stoploss_guard_stop_duration = IntParameter(1, 288, default=12, space="protection", optimize=protect_optimize)
+
+    # Protection hyperspace params:
+    # Protection hyperspace params:
+    protection_params = {
+        "cooldown_lookback": 5,
+        "max_drawdown_lookback": 12,
+        "max_drawdown_trade_limit": 5,
+        "max_drawdown_stop_duration": 12,
+        "max_allowed_drawdown": 0.2,
+        "stoploss_guard_lookback": 12,
+        "stoploss_guard_trade_limit": 3,
+        "stoploss_guard_stop_duration": 12
+    }
+
+    @property
+    def protections(self):
+        return [
+            {
+                "method": "CooldownPeriod",
+                "stop_duration_candles": self.cooldown_lookback.value
+            },
+            {
+                "method": "MaxDrawdown",
+                "lookback_period_candles": self.max_drawdown_lookback.value,
+                "trade_limit": self.max_drawdown_trade_limit.value,
+                "stop_duration_candles": self.max_drawdown_stop_duration.value,
+                "max_allowed_drawdown": self.max_allowed_drawdown.value
+            },
+            {
+                "method": "StoplossGuard",
+                "lookback_period_candles": self.stoploss_guard_lookback.value,
+                "trade_limit": self.stoploss_guard_trade_limit.value,
+                "stop_duration_candles": self.stoploss_guard_stop_duration.value,
+                "only_per_pair": False
+            }
+        ]
+
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
                         current_rate: float, current_profit: float, **kwargs) -> float:
 
@@ -109,6 +157,10 @@ class ConsensusShort(IStrategy):
 
         return stoploss_from_open(sl_profit, current_profit, is_short=trade.is_short)
 
+    # def informative_pairs(self):
+    #     informative_pairs = [(f"BTC/USDT", '1d')]
+    #     return informative_pairs
+
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # Consensus strategy
         # add c.evaluate_indicator bellow to include it in the consensus score (look at
@@ -136,13 +188,27 @@ class ConsensusShort(IStrategy):
         c.evaluate_adx()
         dataframe['consensus_buy'] = c.score()['buy']
         dataframe['consensus_sell'] = c.score()['sell']
+
+        # # get btc 1d informative
+        # inf_tf_1d = '1d'
+        # informative_btc_1d = self.dp.get_pair_dataframe(pair=f"BTC/USDT", timeframe=inf_tf_1d)
+        #
+        # # Bollinger bands
+        # bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(informative_btc_1d), window=20, stds=2)
+        # informative_btc_1d['bb_lowerband'] = bollinger['lower']
+        # informative_btc_1d['bb_middleband'] = bollinger['mid']
+        # informative_btc_1d['bb_upperband'] = bollinger['upper']
+        #
+        # dataframe = merge_informative_pair(dataframe, informative_btc_1d, self.timeframe, inf_tf_1d, ffill=True)
+
         return dataframe
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
-                    (dataframe['consensus_buy'] < self.buy_score_short.value) &
-                    (dataframe['volume'] > 0)
+                    (dataframe['consensus_buy'] < self.buy_score_short.value)
+                    # &
+                    # (dataframe['close_1d'] < dataframe['bb_middleband_1d'])
             ),
             'enter_short'] = 1
 
@@ -155,8 +221,7 @@ class ConsensusShort(IStrategy):
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
-                    (dataframe['consensus_sell'] < self.sell_score_short.value) &
-                    (dataframe['volume'] > 0)
+                    (dataframe['consensus_sell'] < self.sell_score_short.value)
             ),
             'exit_short'] = 1
 
