@@ -10,7 +10,7 @@ from pandas import DataFrame
 
 import talib.abstract as ta
 import numpy  # noqa
-from skopt.space import Dimension, Integer
+from freqtrade.optimize.space import Dimension, Integer, SKDecimal
 logger = logging.getLogger(__name__)
 
 
@@ -171,22 +171,40 @@ class BinHV27_short(IStrategy):
         @staticmethod
         def generate_roi_table(params: Dict) -> Dict[int, float]:
             roi_table = {}
-            roi_table[params['roi_t1']] = 0
+            roi_table[0] = params['roi_p1'] + params['roi_p2'] + params['roi_p3'] + params['roi_p4'] + params[
+                'roi_p5'] + params['roi_p6']
+            roi_table[params['roi_t6']] = params['roi_p1'] + params['roi_p2'] + params['roi_p3'] + params['roi_p4'] + \
+                                          params['roi_p5']
+            roi_table[params['roi_t6'] + params['roi_t5']] = params['roi_p1'] + params['roi_p2'] + params['roi_p3'] + \
+                                                             params['roi_p4']
+            roi_table[params['roi_t6'] + params['roi_t5'] + params['roi_t4']] = params['roi_p1'] + params['roi_p2'] + \
+                                                                                params['roi_p3']
+            roi_table[params['roi_t6'] + params['roi_t5'] + params['roi_t4'] + params['roi_t3']] = params['roi_p1'] + \
+                                                                                                   params['roi_p2']
+            roi_table[params['roi_t6'] + params['roi_t5'] + params['roi_t4'] + params['roi_t3'] + params['roi_t2']] = \
+            params['roi_p1']
+            roi_table[
+                params['roi_t6'] + params['roi_t5'] + params['roi_t4'] + params['roi_t3'] + params['roi_t2'] + params[
+                    'roi_t1']] = 0
+
             return roi_table
 
         @staticmethod
         def roi_space() -> List[Dimension]:
-            roi_min_time = 10
-            roi_max_time = 600
-
-            roi_limits = {
-                'roi_t1_min': int(roi_min_time),
-                'roi_t1_max': int(roi_max_time)
-            }
-            logger.info(f"Using roi space limits: {roi_limits}")
-
             return [
-                Integer(roi_limits['roi_t1_min'], roi_limits['roi_t1_max'], name='roi_t1')
+                Integer(1, 20, name='roi_t6'),
+                Integer(10, 20, name='roi_t5'),
+                Integer(10, 20, name='roi_t4'),
+                Integer(15, 30, name='roi_t3'),
+                Integer(264, 630, name='roi_t2'),
+                Integer(420, 720, name='roi_t1'),
+
+                SKDecimal(0.050, 0.100, decimals=3, name='roi_p6'),
+                SKDecimal(0.020, 0.050, decimals=3, name='roi_p5'),
+                SKDecimal(0.015, 0.020, decimals=3, name='roi_p4'),
+                SKDecimal(0.005, 0.015, decimals=3, name='roi_p3'),
+                SKDecimal(0.005, 0.010, decimals=3, name='roi_p2'),
+                SKDecimal(0.005, 0.010, decimals=3, name='roi_p1'),
             ]
 
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
