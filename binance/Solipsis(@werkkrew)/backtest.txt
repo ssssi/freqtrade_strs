@@ -55,3 +55,61 @@
 | Drawdown End                | 2022-05-27 21:00:00 |
 | Market change               | -59.52%             |
 =====================================================
+
+========================================================= ENTER TAG STATS ==========================================================
+|   TAG |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit USDT |   Tot Profit % |   Avg Duration |   Win  Draw  Loss  Win% |
+|-------+--------+----------------+----------------+-------------------+----------------+----------------+-------------------------|
+| TOTAL |    303 |           1.68 |         510.55 |           167.281 |         371.74 |        1:49:00 |   293     0    10  96.7 |
+======================================================= EXIT REASON STATS ========================================================
+|        Exit Reason |   Exits |   Win  Draws  Loss  Win% |   Avg Profit % |   Cum Profit % |   Tot Profit USDT |   Tot Profit % |
+|--------------------+---------+--------------------------+----------------+----------------+-------------------+----------------|
+|                roi |     293 |    293     0     0   100 |           2.55 |         746.57 |           255.347 |         248.86 |
+| trailing_stop_loss |       9 |      0     0     9     0 |         -25.41 |        -228.7  |           -82.888 |         -76.23 |
+|         force_exit |       1 |      0     0     1     0 |          -7.33 |          -7.33 |            -5.178 |          -2.44 |
+======================================================= LEFT OPEN TRADES REPORT ========================================================
+|      Pair |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit USDT |   Tot Profit % |   Avg Duration |   Win  Draw  Loss  Win% |
+|-----------+--------+----------------+----------------+-------------------+----------------+----------------+-------------------------|
+| CELR/USDT |      1 |          -7.33 |          -7.33 |            -5.178 |         -11.51 |        4:20:00 |     0     0     1     0 |
+|     TOTAL |      1 |          -7.33 |          -7.33 |            -5.178 |         -11.51 |        4:20:00 |     0     0     1     0 |
+================== SUMMARY METRICS ==================
+| Metric                      | Value               |
+|-----------------------------+---------------------|
+| Backtesting from            | 2022-05-10 00:00:00 |
+| Backtesting to              | 2022-06-09 03:15:00 |
+| Max open trades             | 3                   |
+|                             |                     |
+| Total/Daily Avg Trades      | 303 / 10.1          |
+| Starting balance            | 45 USDT             |
+| Final balance               | 212.281 USDT        |
+| Absolute profit             | 167.281 USDT        |
+| Total profit %              | 371.74%             |
+| CAGR %                      | 15728079482.30%     |
+| Trades per day              | 10.1                |
+| Avg. daily profit %         | 12.39%              |
+| Avg. stake amount           | 39.756 USDT         |
+| Total trade volume          | 12046.117 USDT      |
+|                             |                     |
+| Best Pair                   | ATOM/USDT 36.88%    |
+| Worst Pair                  | CVC/USDT -45.89%    |
+| Best trade                  | GRT/USDT 20.96%     |
+| Worst trade                 | CVC/USDT -48.65%    |
+| Best day                    | 24.108 USDT         |
+| Worst day                   | -44.178 USDT        |
+| Days win/draw/lose          | 27 / 0 / 4          |
+| Avg. Duration Winners       | 1:20:00             |
+| Avg. Duration Loser         | 16:16:00            |
+| Rejected Entry signals      | 105438              |
+| Entry/Exit Timeouts         | 0 / 0               |
+|                             |                     |
+| Min balance                 | 36.809 USDT         |
+| Max balance                 | 217.459 USDT        |
+| Max % of account underwater | 28.01%              |
+| Absolute Drawdown (Account) | 28.01%              |
+| Absolute Drawdown           | 44.305 USDT         |
+| Drawdown high               | 113.199 USDT        |
+| Drawdown low                | 68.894 USDT         |
+| Drawdown Start              | 2022-05-26 22:20:00 |
+| Drawdown End                | 2022-05-27 21:00:00 |
+| Market change               | -27.88%             |
+=====================================================
+
