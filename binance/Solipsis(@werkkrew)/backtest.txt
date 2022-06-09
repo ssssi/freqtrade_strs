@@ -1,0 +1,57 @@
+========================================================= ENTER TAG STATS ==========================================================
+|   TAG |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit USDT |   Tot Profit % |   Avg Duration |   Win  Draw  Loss  Win% |
+|-------+--------+----------------+----------------+-------------------+----------------+----------------+-------------------------|
+| TOTAL |   2191 |           0.67 |        1470.88 |          1852.653 |        3087.75 |        3:05:00 |  2064     0   127  94.2 |
+======================================================= EXIT REASON STATS ========================================================
+|        Exit Reason |   Exits |   Win  Draws  Loss  Win% |   Avg Profit % |   Cum Profit % |   Tot Profit USDT |   Tot Profit % |
+|--------------------+---------+--------------------------+----------------+----------------+-------------------+----------------|
+|                roi |    2064 |   2064     0     0   100 |           2.12 |        4373.2  |          5115.17  |        1457.73 |
+| trailing_stop_loss |     123 |      0     0   123     0 |         -21.7  |       -2669.69 |         -3069.77  |        -889.9  |
+|          stop_loss |       3 |      0     0     3     0 |         -75.15 |        -225.44 |          -147.553 |         -75.15 |
+|         force_exit |       1 |      0     0     1     0 |          -7.18 |          -7.18 |           -45.192 |          -2.39 |
+======================================================= LEFT OPEN TRADES REPORT =======================================================
+|     Pair |   Buys |   Avg Profit % |   Cum Profit % |   Tot Profit USDT |   Tot Profit % |   Avg Duration |   Win  Draw  Loss  Win% |
+|----------+--------+----------------+----------------+-------------------+----------------+----------------+-------------------------|
+| XMR/USDT |      1 |          -7.18 |          -7.18 |           -45.192 |         -75.32 |        8:05:00 |     0     0     1     0 |
+|    TOTAL |      1 |          -7.18 |          -7.18 |           -45.192 |         -75.32 |        8:05:00 |     0     0     1     0 |
+================== SUMMARY METRICS ==================
+| Metric                      | Value               |
+|-----------------------------+---------------------|
+| Backtesting from            | 2021-09-21 19:25:00 |
+| Backtesting to              | 2022-06-05 16:55:00 |
+| Max open trades             | 3                   |
+|                             |                     |
+| Total/Daily Avg Trades      | 2191 / 8.56         |
+| Starting balance            | 60 USDT             |
+| Final balance               | 1912.653 USDT       |
+| Absolute profit             | 1852.653 USDT       |
+| Total profit %              | 3087.75%            |
+| CAGR %                      | 13820.04%           |
+| Trades per day              | 8.56                |
+| Avg. daily profit %         | 12.06%              |
+| Avg. stake amount           | 117.785 USDT        |
+| Total trade volume          | 258067.624 USDT     |
+|                             |                     |
+| Best Pair                   | 1000XEC/USDT 97.81% |
+| Worst Pair                  | LINK/USDT -97.50%   |
+| Best trade                  | ZRX/USDT 50.96%     |
+| Worst trade                 | ZEN/USDT -75.15%    |
+| Best day                    | 201.339 USDT        |
+| Worst day                   | -469.641 USDT       |
+| Days win/draw/lose          | 191 / 1 / 65        |
+| Avg. Duration Winners       | 1:51:00             |
+| Avg. Duration Loser         | 23:07:00            |
+| Rejected Entry signals      | 1336609             |
+| Entry/Exit Timeouts         | 0 / 0               |
+|                             |                     |
+| Min balance                 | 50.742 USDT         |
+| Max balance                 | 1957.845 USDT       |
+| Max % of account underwater | 81.21%              |
+| Absolute Drawdown (Account) | 28.01%              |
+| Absolute Drawdown           | 470.989 USDT        |
+| Drawdown high               | 1621.754 USDT       |
+| Drawdown low                | 1150.766 USDT       |
+| Drawdown Start              | 2022-05-26 22:20:00 |
+| Drawdown End                | 2022-05-27 21:00:00 |
+| Market change               | -59.52%             |
+=====================================================
