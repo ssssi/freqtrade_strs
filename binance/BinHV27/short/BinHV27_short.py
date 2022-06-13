@@ -199,12 +199,12 @@ class BinHV27_short(IStrategy):
                 Integer(264, 630, name='roi_t2'),
                 Integer(420, 720, name='roi_t1'),
 
-                SKDecimal(0.050, 0.100, decimals=3, name='roi_p6'),
-                SKDecimal(0.020, 0.050, decimals=3, name='roi_p5'),
-                SKDecimal(0.015, 0.020, decimals=3, name='roi_p4'),
-                SKDecimal(0.005, 0.015, decimals=3, name='roi_p3'),
-                SKDecimal(0.005, 0.010, decimals=3, name='roi_p2'),
-                SKDecimal(0.005, 0.010, decimals=3, name='roi_p1'),
+                SKDecimal(0.150, 0.300, decimals=3, name='roi_p6'),
+                SKDecimal(0.060, 0.150, decimals=3, name='roi_p5'),
+                SKDecimal(0.045, 0.06, decimals=3, name='roi_p4'),
+                SKDecimal(0.015, 0.045, decimals=3, name='roi_p3'),
+                SKDecimal(0.015, 0.03, decimals=3, name='roi_p2'),
+                SKDecimal(0.015, 0.03, decimals=3, name='roi_p1'),
             ]
 
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
