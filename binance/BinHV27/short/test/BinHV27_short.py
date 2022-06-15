@@ -1,5 +1,8 @@
+import logging
 from datetime import datetime
 from functools import reduce
+
+
 import numpy as np
 
 from freqtrade.strategy import IntParameter, DecimalParameter, CategoricalParameter
@@ -8,6 +11,7 @@ from pandas import DataFrame, Series
 
 import talib.abstract as ta
 import numpy  # noqa
+logger = logging.getLogger(__name__)
 
 
 # custom indicators
@@ -159,7 +163,7 @@ class BinHV27_short(IStrategy):
     stoploss = -0.99
     timeframe = '5m'
 
-    process_only_new_candles = True
+    process_only_new_candles = False
     startup_candle_count = 240
 
     # default False
@@ -208,27 +212,29 @@ class BinHV27_short(IStrategy):
     stoploss_guard_stop_duration = IntParameter(1, 288, default=12, space="protection", optimize=protect_optimize)
 
     # custom exit
-    csell_pullback_amount = DecimalParameter(0.005, 0.15, default=0.01, space='sell', load=True, optimize=True)
+    ce_op = True
+    csell_pullback_amount = DecimalParameter(0.005, 0.15, default=0.01, space='sell', load=True, optimize=ce_op)
     csell_roi_type = CategoricalParameter(['static', 'decay', 'step'], default='step', space='sell', load=True,
-                                          optimize=True)
-    csell_roi_start = DecimalParameter(0.01, 0.15, default=0.01, space='sell', load=True, optimize=True)
-    csell_roi_end = DecimalParameter(0.0, 0.01, default=0, space='sell', load=True, optimize=True)
-    csell_roi_time = IntParameter(720, 1440, default=720, space='sell', load=True, optimize=True)
+                                          optimize=ce_op)
+    csell_roi_start = DecimalParameter(0.01, 0.15, default=0.01, space='sell', load=True, optimize=ce_op)
+    csell_roi_end = DecimalParameter(0.0, 0.01, default=0, space='sell', load=True, optimize=ce_op)
+    csell_roi_time = IntParameter(720, 1440, default=720, space='sell', load=True, optimize=ce_op)
     csell_trend_type = CategoricalParameter(['rmi', 'ssl', 'candle', 'any', 'none'], default='any', space='sell',
-                                            load=True, optimize=True)
-    csell_pullback = CategoricalParameter([True, False], default=True, space='sell', load=True, optimize=True)
+                                            load=True, optimize=ce_op)
+    csell_pullback = CategoricalParameter([True, False], default=True, space='sell', load=True, optimize=ce_op)
     csell_pullback_respect_roi = CategoricalParameter([True, False], default=False, space='sell', load=True,
-                                                      optimize=True)
+                                                      optimize=ce_op)
     csell_endtrend_respect_roi = CategoricalParameter([True, False], default=False, space='sell', load=True,
-                                                      optimize=True)
+                                                      optimize=ce_op)
 
     # Custom Stoploss
-    cstop_loss_threshold = DecimalParameter(-0.35, -0.01, default=-0.03, space='sell', load=True, optimize=True)
+    cs_op = True
+    cstop_loss_threshold = DecimalParameter(-0.35, -0.01, default=-0.03, space='sell', load=True, optimize=cs_op)
     cstop_bail_how = CategoricalParameter(['roc', 'time', 'any', 'none'], default='none', space='sell', load=True,
-                                          optimize=True)
-    cstop_bail_roc = DecimalParameter(-5.0, -1.0, default=-3.0, space='sell', load=True, optimize=True)
-    cstop_bail_time = IntParameter(60, 1440, default=720, space='sell', load=True, optimize=True)
-    cstop_bail_time_trend = CategoricalParameter([True, False], default=True, space='sell', load=True, optimize=True)
+                                          optimize=cs_op)
+    cstop_bail_roc = DecimalParameter(-5.0, -1.0, default=-3.0, space='sell', load=True, optimize=cs_op)
+    cstop_bail_time = IntParameter(60, 1440, default=720, space='sell', load=True, optimize=cs_op)
+    cstop_bail_time_trend = CategoricalParameter([True, False], default=True, space='sell', load=True, optimize=cs_op)
 
     # Protection hyperspace params:
     protection_params = {
