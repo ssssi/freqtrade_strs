@@ -39,16 +39,6 @@
       "cstop_bail_time": 1381,
       "cstop_bail_time_trend": false,
       "cstop_loss_threshold": -0.015
-    },
-    "protection": {
-      "cooldown_lookback": 5,
-      "max_allowed_drawdown": 0.2,
-      "max_drawdown_lookback": 12,
-      "max_drawdown_stop_duration": 12,
-      "max_drawdown_trade_limit": 5,
-      "stoploss_guard_lookback": 12,
-      "stoploss_guard_stop_duration": 12,
-      "stoploss_guard_trade_limit": 3
     }
   },
   "ft_stratparam_v": 1,
