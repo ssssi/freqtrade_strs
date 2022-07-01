@@ -1,18 +1,153 @@
 import logging
 from datetime import datetime
 from functools import reduce
-from typing import Dict, List
 
-from freqtrade.persistence import Trade
-from freqtrade.strategy import IntParameter, DecimalParameter, stoploss_from_open, CategoricalParameter
+
+import numpy as np
+
+from freqtrade.strategy import IntParameter, DecimalParameter, CategoricalParameter
 from freqtrade.strategy.interface import IStrategy
-from pandas import DataFrame
+from pandas import DataFrame, Series
 
 import talib.abstract as ta
 import numpy  # noqa
-from freqtrade.optimize.space import Dimension, Integer, SKDecimal
 logger = logging.getLogger(__name__)
 
+
+# custom indicators
+# ##################################################################################################
+def RMI(dataframe, *, length=20, mom=5):
+    """
+    Source: https://github.com/freqtrade/technical/blob/master/technical/indicators/indicators.py#L912
+    """
+    df = dataframe.copy()
+
+    df['maxup'] = (df['close'] - df['close'].shift(mom)).clip(lower=0)
+    df['maxdown'] = (df['close'].shift(mom) - df['close']).clip(lower=0)
+
+    df.fillna(0, inplace=True)
+
+    df["emaInc"] = ta.EMA(df, price='maxup', timeperiod=length)
+    df["emaDec"] = ta.EMA(df, price='maxdown', timeperiod=length)
+
+    df['RMI'] = np.where(df['emaDec'] == 0, 0, 100 - 100 / (1 + df["emaInc"] / df["emaDec"]))
+
+    return df["RMI"]
+
+
+def zema(dataframe, period, field='close'):
+    """
+    Source: https://github.com/freqtrade/technical/blob/master/technical/indicators/overlap_studies.py#L79
+    Modified slightly to use ta.EMA instead of technical ema
+    """
+    df = dataframe.copy()
+
+    df['ema1'] = ta.EMA(df[field], timeperiod=period)
+    df['ema2'] = ta.EMA(df['ema1'], timeperiod=period)
+    df['d'] = df['ema1'] - df['ema2']
+    df['zema'] = df['ema1'] + df['d']
+
+    return df['zema']
+
+
+def same_length(bigger, shorter):
+    return np.concatenate((np.full((bigger.shape[0] - shorter.shape[0]), np.nan), shorter))
+
+
+def mastreak(dataframe: DataFrame, period: int = 4, field='close') -> Series:
+    """
+    MA Streak
+    Port of: https://www.tradingview.com/script/Yq1z7cIv-MA-Streak-Can-Show-When-a-Run-Is-Getting-Long-in-the-Tooth/
+    """
+    df = dataframe.copy()
+
+    avgval = zema(df, period, field)
+
+    arr = np.diff(avgval)
+    pos = np.clip(arr, 0, 1).astype(bool).cumsum()
+    neg = np.clip(arr, -1, 0).astype(bool).cumsum()
+    streak = np.where(arr >= 0, pos - np.maximum.accumulate(np.where(arr <= 0, pos, 0)),
+                      -neg + np.maximum.accumulate(np.where(arr >= 0, neg, 0)))
+
+    res = same_length(df['close'], streak)
+
+    return res
+
+
+def linear_growth(start: float, end: float, start_time: int, end_time: int, trade_time: int) -> float:
+    """
+    Simple linear growth function. Grows from start to end after end_time minutes (starts after start_time minutes)
+    """
+    time = max(0, trade_time - start_time)
+    rate = (end - start) / (end_time - start_time)
+
+    return min(end, start + (rate * time))
+
+
+def pcc(dataframe: DataFrame, period: int = 20, mult: int = 2):
+    """
+    Percent Change Channel
+    PCC is like KC unless it uses percentage changes in price to set channel distance.
+    https://www.tradingview.com/script/6wwAWXA1-MA-Streak-Change-Channel/
+    """
+    df = dataframe.copy()
+
+    df['previous_close'] = df['close'].shift()
+
+    df['close_change'] = (df['close'] - df['previous_close']) / df['previous_close'] * 100
+    df['high_change'] = (df['high'] - df['close']) / df['close'] * 100
+    df['low_change'] = (df['low'] - df['close']) / df['close'] * 100
+
+    df['delta'] = df['high_change'] - df['low_change']
+
+    mid = zema(df, period, 'close_change')
+    rangema = zema(df, period, 'delta')
+
+    upper = mid + rangema * mult
+    lower = mid - rangema * mult
+
+    return upper, rangema, lower
+
+
+def SSLChannels_ATR(dataframe, length=7):
+    """
+    SSL Channels with ATR: https://www.tradingview.com/script/SKHqWzql-SSL-ATR-channel/
+    Credit to @JimmyNixx for python
+    """
+    df = dataframe.copy()
+
+    df['ATR'] = ta.ATR(df, timeperiod=14)
+    df['smaHigh'] = df['high'].rolling(length).mean() + df['ATR']
+    df['smaLow'] = df['low'].rolling(length).mean() - df['ATR']
+    df['hlv'] = np.where(df['close'] > df['smaHigh'], 1, np.where(df['close'] < df['smaLow'], -1, np.NAN))
+    df['hlv'] = df['hlv'].ffill()
+    df['sslDown'] = np.where(df['hlv'] < 0, df['smaHigh'], df['smaLow'])
+    df['sslUp'] = np.where(df['hlv'] < 0, df['smaLow'], df['smaHigh'])
+
+    return df['sslDown'], df['sslUp']
+
+
+def SROC(dataframe, roclen=21, emalen=13, smooth=21):
+    df = dataframe.copy()
+
+    roc = ta.ROC(df, timeperiod=roclen)
+    ema = ta.EMA(df, timeperiod=emalen)
+    sroc = ta.ROC(ema, timeperiod=smooth)
+
+    return sroc
+
+
+def linear_decay(start: float, end: float, start_time: int, end_time: int, trade_time: int) -> float:
+    """
+    Simple linear decay function. Decays from start to end after end_time minutes (starts after start_time minutes)
+    """
+    time = max(0, trade_time - start_time)
+    rate = (start - end) / (end_time - start_time)
+
+    return max(end, start - (rate * time))
+
+
+# #####################################################################################################
 
 class BinHV27_short(IStrategy):
     """
@@ -22,53 +157,19 @@ class BinHV27_short(IStrategy):
     """
 
     minimal_roi = {
-        "0": 1
-    }
-
-    buy_params = {
-        'buy_adx1': 25,
-        'buy_emarsi1': 20,
-        'buy_adx2': 30,
-        'buy_emarsi2': 20,
-        'buy_adx3': 35,
-        'buy_emarsi3': 20,
-        'buy_adx4': 30,
-        'buy_emarsi4': 25
-    }
-
-    sell_params = {
-        # custom stop loss params
-        "pHSL": -0.25,
-        "pPF_1": 0.012,
-        "pPF_2": 0.05,
-        "pSL_1": 0.01,
-        "pSL_2": 0.04,
-        
-        # leverage set  
-        "leverage_num": 1,
-
-        # sell params
-        'emarsi1': 75,
-        'adx2': 30,
-        'emarsi2': 80,
-        'emarsi3': 75,
-
-        # sell optional
-        "sell_1": True,
-        "sell_2": True,
-        "sell_3": True,
-        "sell_4": True,
-        "sell_5": True,
+        "0": 100
     }
 
     stoploss = -0.99
     timeframe = '5m'
 
-    process_only_new_candles = True
+    process_only_new_candles = False
     startup_candle_count = 240
 
     # default False
     use_custom_stoploss = True
+
+    custom_trade_info = {}
 
     can_short = True
 
@@ -96,30 +197,8 @@ class BinHV27_short(IStrategy):
     buy_adx4 = IntParameter(low=20, high=100, default=30, space='buy', optimize=buy_optimize)
     buy_emarsi4 = IntParameter(low=20, high=100, default=25, space='buy', optimize=buy_optimize)
 
-    # trailing stoploss
-    trailing_optimize = True
-    pHSL = DecimalParameter(-0.990, -0.040, default=-0.08, decimals=3, space='sell', optimize=trailing_optimize)
-    pPF_1 = DecimalParameter(0.008, 0.100, default=0.016, decimals=3, space='sell', optimize=trailing_optimize)
-    pSL_1 = DecimalParameter(0.008, 0.100, default=0.011, decimals=3, space='sell', optimize=trailing_optimize)
-    pPF_2 = DecimalParameter(0.040, 0.200, default=0.080, decimals=3, space='sell', optimize=trailing_optimize)
-    pSL_2 = DecimalParameter(0.040, 0.200, default=0.040, decimals=3, space='sell', optimize=trailing_optimize)
-
-    # sell params
-    sell_optimize = True
-    adx2 = IntParameter(low=10, high=100, default=30, space='sell', optimize=sell_optimize)
-    emarsi1 = IntParameter(low=10, high=100, default=75, space='sell', optimize=sell_optimize)
-    emarsi2 = IntParameter(low=20, high=100, default=80, space='sell', optimize=sell_optimize)
-    emarsi3 = IntParameter(low=20, high=100, default=75, space='sell', optimize=sell_optimize)
-
-    sell2_optimize = True
-    sell_1 = CategoricalParameter([True, False], default=True, space="sell", optimize=sell2_optimize)
-    sell_2 = CategoricalParameter([True, False], default=True, space="sell", optimize=sell2_optimize)
-    sell_3 = CategoricalParameter([True, False], default=True, space="sell", optimize=sell2_optimize)
-    sell_4 = CategoricalParameter([True, False], default=True, space="sell", optimize=sell2_optimize)
-    sell_5 = CategoricalParameter([True, False], default=True, space="sell", optimize=sell2_optimize)
-
-    leverage_optimize = False
-    leverage_num = IntParameter(low=1, high=5, default=1, space='sell', optimize=leverage_optimize)
+    leverage_optimize = True
+    leverage_num = IntParameter(low=1, high=10, default=1, space='buy', optimize=leverage_optimize)
 
     protect_optimize = True
     cooldown_lookback = IntParameter(1, 240, default=5, space="protection", optimize=protect_optimize)
@@ -131,6 +210,32 @@ class BinHV27_short(IStrategy):
     stoploss_guard_lookback = IntParameter(1, 288, default=12, space="protection", optimize=protect_optimize)
     stoploss_guard_trade_limit = IntParameter(1, 20, default=3, space="protection", optimize=protect_optimize)
     stoploss_guard_stop_duration = IntParameter(1, 288, default=12, space="protection", optimize=protect_optimize)
+
+    # custom exit
+    ce_op = True
+    csell_pullback_amount = DecimalParameter(0.005, 0.15, default=0.01, space='sell', load=True, optimize=ce_op)
+    csell_roi_type = CategoricalParameter(['static', 'decay', 'step'], default='step', space='sell', load=True,
+                                          optimize=ce_op)
+    csell_roi_start = DecimalParameter(0.01, 0.15, default=0.01, space='sell', load=True, optimize=ce_op)
+    csell_roi_end = DecimalParameter(0.0, 0.01, default=0, space='sell', load=True, optimize=ce_op)
+    csell_roi_time = IntParameter(720, 1440, default=720, space='sell', load=True, optimize=ce_op)
+    csell_trend_type = CategoricalParameter(['rmi', 'ssl', 'candle', 'any', 'none'], default='any', space='sell',
+                                            load=True, optimize=ce_op)
+    csell_pullback = CategoricalParameter([True, False], default=True, space='sell', load=True, optimize=ce_op)
+    csell_pullback_respect_roi = CategoricalParameter([True, False], default=False, space='sell', load=True,
+                                                      optimize=ce_op)
+    csell_endtrend_respect_roi = CategoricalParameter([True, False], default=False, space='sell', load=True,
+                                                      optimize=ce_op)
+
+    # Custom Stoploss
+    cs_op = True
+    cstop_loss_threshold = DecimalParameter(-0.35, -0.01, default=-0.03, space='sell', load=True, optimize=cs_op)
+    cstop_bail_how = CategoricalParameter(['roc', 'time', 'any', 'none'], default='none', space='sell', load=True,
+                                          optimize=cs_op)
+    cstop_bail_roc = DecimalParameter(-5.0, -1.0, default=-3.0, space='sell', load=True, optimize=cs_op)
+    cstop_bail_time = IntParameter(60, 1440, default=720, space='sell', load=True, optimize=cs_op)
+    cstop_bail_time_trend = CategoricalParameter([True, False], default=True, space='sell', load=True, optimize=cs_op)
+    cstop_max_stoploss = DecimalParameter(-0.30, -0.01, default=-0.10, space='sell', load=True, optimize=cs_op)
 
     # Protection hyperspace params:
     protection_params = {
@@ -167,77 +272,12 @@ class BinHV27_short(IStrategy):
             }
         ]
 
-    class HyperOpt:
-        @staticmethod
-        def generate_roi_table(params: Dict) -> Dict[int, float]:
-            roi_table = {}
-            roi_table[0] = params['roi_p1'] + params['roi_p2'] + params['roi_p3'] + params['roi_p4'] + params[
-                'roi_p5'] + params['roi_p6']
-            roi_table[params['roi_t6']] = params['roi_p1'] + params['roi_p2'] + params['roi_p3'] + params['roi_p4'] + \
-                                          params['roi_p5']
-            roi_table[params['roi_t6'] + params['roi_t5']] = params['roi_p1'] + params['roi_p2'] + params['roi_p3'] + \
-                                                             params['roi_p4']
-            roi_table[params['roi_t6'] + params['roi_t5'] + params['roi_t4']] = params['roi_p1'] + params['roi_p2'] + \
-                                                                                params['roi_p3']
-            roi_table[params['roi_t6'] + params['roi_t5'] + params['roi_t4'] + params['roi_t3']] = params['roi_p1'] + \
-                                                                                                   params['roi_p2']
-            roi_table[params['roi_t6'] + params['roi_t5'] + params['roi_t4'] + params['roi_t3'] + params['roi_t2']] = \
-            params['roi_p1']
-            roi_table[
-                params['roi_t6'] + params['roi_t5'] + params['roi_t4'] + params['roi_t3'] + params['roi_t2'] + params[
-                    'roi_t1']] = 0
-
-            return roi_table
-
-        @staticmethod
-        def roi_space() -> List[Dimension]:
-            return [
-                Integer(1, 20, name='roi_t6'),
-                Integer(10, 20, name='roi_t5'),
-                Integer(10, 20, name='roi_t4'),
-                Integer(15, 30, name='roi_t3'),
-                Integer(264, 630, name='roi_t2'),
-                Integer(420, 720, name='roi_t1'),
-
-                SKDecimal(0.150, 0.300, decimals=3, name='roi_p6'),
-                SKDecimal(0.060, 0.150, decimals=3, name='roi_p5'),
-                SKDecimal(0.045, 0.06, decimals=3, name='roi_p4'),
-                SKDecimal(0.015, 0.045, decimals=3, name='roi_p3'),
-                SKDecimal(0.015, 0.03, decimals=3, name='roi_p2'),
-                SKDecimal(0.015, 0.03, decimals=3, name='roi_p1'),
-            ]
-
-    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
-                        current_rate: float, current_profit: float, **kwargs) -> float:
-
-        # hard stoploss profit
-        HSL = self.pHSL.value
-        PF_1 = self.pPF_1.value
-        SL_1 = self.pSL_1.value
-        PF_2 = self.pPF_2.value
-        SL_2 = self.pSL_2.value
-
-        # For profits between PF_1 and PF_2 the stoploss (sl_profit) used is linearly interpolated
-        # between the values of SL_1 and SL_2. For all profits above PL_2 the sl_profit value
-        # rises linearly with current profit, for profits below PF_1 the hard stoploss profit is used.
-
-        if current_profit > PF_2:
-            sl_profit = SL_2 + (current_profit - PF_2)
-        elif current_profit > PF_1:
-            sl_profit = SL_1 + ((current_profit - PF_1) * (SL_2 - SL_1) / (PF_2 - PF_1))
-        else:
-            sl_profit = HSL
-
-        if self.can_short:
-            if (-1 + ((1 - sl_profit) / (1 - current_profit))) <= 0:
-                return 1
-        else:
-            if (1 - ((1 + sl_profit) / (1 + current_profit))) <= 0:
-                return 1
-
-        return stoploss_from_open(sl_profit, current_profit, is_short=trade.is_short)
-
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        if not metadata['pair'] in self.custom_trade_info:
+            self.custom_trade_info[metadata['pair']] = {}
+            if 'had-trend' not in self.custom_trade_info[metadata["pair"]]:
+                self.custom_trade_info[metadata['pair']]['had-trend'] = False
+
         dataframe['rsi'] = numpy.nan_to_num(ta.RSI(dataframe, timeperiod=5))
         rsiframe = DataFrame(dataframe['rsi']).rename(columns={'rsi': 'close'})
         dataframe['emarsi'] = numpy.nan_to_num(ta.EMA(rsiframe, timeperiod=5))
@@ -263,6 +303,19 @@ class BinHV27_short(IStrategy):
             'slowsma'].shift().gt(dataframe['slowsma'].shift(2))
         dataframe['delta'] = dataframe['fastsma'] - dataframe['fastsma'].shift()
         dataframe['slowingdown'] = dataframe['delta'].lt(dataframe['delta'].shift())
+
+        dataframe['rmi'] = RMI(dataframe, length=24, mom=5)
+        dataframe['rmi-up'] = np.where(dataframe['rmi'] >= dataframe['rmi'].shift(), 1, 0)
+        dataframe['rmi-down-trend'] = np.where(dataframe['rmi-up'].rolling(5).sum() <= 2, 1, 0)
+
+        # Indicators used only for ROI and Custom Stoploss
+        ssldown, sslup = SSLChannels_ATR(dataframe, length=21)
+        dataframe['sroc'] = SROC(dataframe, roclen=21, emalen=13, smooth=21)
+        dataframe['ssl-dir'] = np.where(sslup > ssldown, 'up', 'down')
+
+        # Trends, Peaks and Crosses
+        dataframe['candle-up'] = np.where(dataframe['close'] >= dataframe['open'], 1, 0)
+        dataframe['candle-down-trend'] = np.where(dataframe['candle-up'].rolling(5).sum() <= 2, 1, 0)
 
         return dataframe
 
@@ -347,69 +400,105 @@ class BinHV27_short(IStrategy):
         dataframe.loc[(), ['exit_long', 'exit_tag']] = (0, 'long_out')
         return dataframe
 
-    def custom_exit(self, pair: str, trade: Trade, current_time: 'datetime', current_rate: float,
-                    current_profit: float, **kwargs):
-
-        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
-
-        last_candle = dataframe.iloc[-1].squeeze()
-
-        if current_profit >= self.pPF_1.value:
-            return None
-
-        if self.sell_1.value:
-            if (
-                    (~last_candle['preparechangetrendconfirm'])
-                    and (~last_candle['continueup'])
-                    and (last_candle['close'] > last_candle['lowsma'] or last_candle['close'] > last_candle['highsma'])
-                    and (last_candle['highsma'] > 0)
-                    and (last_candle['bigdown'])
-            ):
-                return "sell_1"
-
-        if self.sell_2.value:
-            if (
-                    (~last_candle['preparechangetrendconfirm'])
-                    and (~last_candle['continueup'])
-                    and (last_candle['close'] > last_candle['highsma'])
-                    and (last_candle['highsma'] > 0)
-                    and (last_candle['emarsi'] > self.emarsi1.value or last_candle['close'] > last_candle['slowsma'])
-                    and (last_candle['bigdown'])
-            ):
-                return "sell_2"
-
-        if self.sell_3.value:
-            if (
-                    (~last_candle['preparechangetrendconfirm'])
-                    and (last_candle['close'] > last_candle['highsma'])
-                    and (last_candle['highsma'] > 0)
-                    and (last_candle['adx'] > self.adx2.value)
-                    and (last_candle['emarsi'] >= self.emarsi2.value)
-                    and (last_candle['bigup'])
-            ):
-                return "sell_3"
-
-        if self.sell_4.value:
-            if (
-                    (last_candle['preparechangetrendconfirm'])
-                    and (~last_candle['continueup'])
-                    and (last_candle['slowingdown'])
-                    and (last_candle['emarsi'] >= self.emarsi3.value)
-                    and (last_candle['slowsma'] > 0)
-            ):
-                return "sell_4"
-
-        if self.sell_5.value:
-            if (
-                    (last_candle['preparechangetrendconfirm'])
-                    and (last_candle['minusdi'] < last_candle['plusdi'])
-                    and (last_candle['close'] > last_candle['lowsma'])
-                    and (last_candle['slowsma'] > 0)
-            ):
-                return "sell_5"
-
     def leverage(self, pair: str, current_time: datetime, current_rate: float,
                  proposed_leverage: float, max_leverage: float, side: str,
                  **kwargs) -> float:
 
         return self.leverage_num.value
+
+    """
+    Custom Stoploss
+    """
+
+    def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime, current_rate: float,
+                        current_profit: float, **kwargs) -> float:
+
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
+        last_candle = dataframe.iloc[-1].squeeze()
+        trade_dur = int((current_time.timestamp() - trade.open_date_utc.timestamp()) // 60)
+        in_trend = self.custom_trade_info[trade.pair]['had-trend']
+
+        if current_profit < self.cstop_max_stoploss.value:
+            return 0.01
+
+        # Determine how we sell when we are in a loss
+        if current_profit < self.cstop_loss_threshold.value:
+            if self.cstop_bail_how.value == 'roc' or self.cstop_bail_how.value == 'any':
+                # Dynamic bailout based on rate of change
+                if last_candle['sroc'] <= self.cstop_bail_roc.value:
+                    return 0.01
+            if self.cstop_bail_how.value == 'time' or self.cstop_bail_how.value == 'any':
+                # Dynamic bailout based on time, unless time_trend is true and there is a potential reversal
+                if trade_dur > self.cstop_bail_time.value:
+                    if self.cstop_bail_time_trend.value and in_trend:
+                        return 1
+                    else:
+                        return 0.01
+        return 1
+
+    """
+    Custom Sell
+    """
+
+    def custom_exit(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
+                    current_profit: float, **kwargs):
+
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
+        last_candle = dataframe.iloc[-1].squeeze()
+
+        trade_dur = int((current_time.timestamp() - trade.open_date_utc.timestamp()) // 60)
+        max_profit = max(0, trade.calc_profit_ratio(trade.max_rate))
+        pullback_value = max(0, (max_profit - self.csell_pullback_amount.value))
+        in_trend = False
+
+        # Determine our current ROI point based on the defined type
+        if self.csell_roi_type.value == 'static':
+            min_roi = self.csell_roi_start.value
+        elif self.csell_roi_type.value == 'decay':
+            min_roi = linear_decay(self.csell_roi_start.value, self.csell_roi_end.value, 0, self.csell_roi_time.value,
+                                   trade_dur)
+        elif self.csell_roi_type.value == 'step':
+            if trade_dur < self.csell_roi_time.value:
+                min_roi = self.csell_roi_start.value
+            else:
+                min_roi = self.csell_roi_end.value
+
+        # Determine if there is a trend
+        if self.csell_trend_type.value == 'rmi' or self.csell_trend_type.value == 'any':
+            if last_candle['rmi-down-trend'] == 1:
+                in_trend = True
+        if self.csell_trend_type.value == 'ssl' or self.csell_trend_type.value == 'any':
+            if last_candle['ssl-dir'] == 'down':
+                in_trend = True
+        if self.csell_trend_type.value == 'candle' or self.csell_trend_type.value == 'any':
+            if last_candle['candle-down-trend'] == 1:
+                in_trend = True
+
+        # Don't sell if we are in a trend unless the pullback threshold is met
+        if in_trend and current_profit > 0:
+            # Record that we were in a trend for this trade/pair for a more useful sell message later
+            self.custom_trade_info[trade.pair]['had-trend'] = True
+            # If pullback is enabled and profit has pulled back allow a sell, maybe
+            if self.csell_pullback.value and (current_profit <= pullback_value):
+                if self.csell_pullback_respect_roi.value and current_profit > min_roi:
+                    return 'intrend_pullback_roi'
+                elif not self.csell_pullback_respect_roi.value:
+                    if current_profit > min_roi:
+                        return 'intrend_pullback_roi'
+                    else:
+                        return 'intrend_pullback_noroi'
+            # We are in a trend and pullback is disabled or has not happened or various criteria were not met, hold
+            return None
+        # If we are not in a trend, just use the roi value
+        elif not in_trend:
+            if self.custom_trade_info[trade.pair]['had-trend']:
+                if current_profit > min_roi:
+                    self.custom_trade_info[trade.pair]['had-trend'] = False
+                    return 'trend_roi'
+                elif not self.csell_endtrend_respect_roi.value:
+                    self.custom_trade_info[trade.pair]['had-trend'] = False
+                    return 'trend_noroi'
+            elif current_profit > min_roi:
+                return 'notrend_roi'
+        else:
+            return None
