@@ -5,7 +5,7 @@ from functools import reduce
 
 import numpy as np
 
-from freqtrade.strategy import IntParameter, DecimalParameter, CategoricalParameter
+from freqtrade.strategy import IntParameter, DecimalParameter, CategoricalParameter, informative
 from freqtrade.strategy.interface import IStrategy
 from pandas import DataFrame, Series
 
@@ -237,40 +237,45 @@ class BinHV27_short(IStrategy):
     cstop_bail_time_trend = CategoricalParameter([True, False], default=True, space='sell', load=True, optimize=cs_op)
     cstop_max_stoploss = DecimalParameter(-0.30, -0.01, default=-0.10, space='sell', load=True, optimize=cs_op)
 
-    # Protection hyperspace params:
-    protection_params = {
-        "cooldown_lookback": 5,
-        "max_drawdown_lookback": 12,
-        "max_drawdown_trade_limit": 5,
-        "max_drawdown_stop_duration": 12,
-        "max_allowed_drawdown": 0.2,
-        "stoploss_guard_lookback": 12,
-        "stoploss_guard_trade_limit": 3,
-        "stoploss_guard_stop_duration": 12
-    }
+    # # Protection hyperspace params:
+    # protection_params = {
+    #     "cooldown_lookback": 5,
+    #     "max_drawdown_lookback": 12,
+    #     "max_drawdown_trade_limit": 5,
+    #     "max_drawdown_stop_duration": 12,
+    #     "max_allowed_drawdown": 0.2,
+    #     "stoploss_guard_lookback": 12,
+    #     "stoploss_guard_trade_limit": 3,
+    #     "stoploss_guard_stop_duration": 12
+    # }
+    #
+    # @property
+    # def protections(self):
+    #     return [
+    #         {
+    #             "method": "CooldownPeriod",
+    #             "stop_duration_candles": self.cooldown_lookback.value
+    #         },
+    #         {
+    #             "method": "MaxDrawdown",
+    #             "lookback_period_candles": self.max_drawdown_lookback.value,
+    #             "trade_limit": self.max_drawdown_trade_limit.value,
+    #             "stop_duration_candles": self.max_drawdown_stop_duration.value,
+    #             "max_allowed_drawdown": self.max_allowed_drawdown.value
+    #         },
+    #         {
+    #             "method": "StoplossGuard",
+    #             "lookback_period_candles": self.stoploss_guard_lookback.value,
+    #             "trade_limit": self.stoploss_guard_trade_limit.value,
+    #             "stop_duration_candles": self.stoploss_guard_stop_duration.value,
+    #             "only_per_pair": False
+    #         }
+    #     ]
 
-    @property
-    def protections(self):
-        return [
-            {
-                "method": "CooldownPeriod",
-                "stop_duration_candles": self.cooldown_lookback.value
-            },
-            {
-                "method": "MaxDrawdown",
-                "lookback_period_candles": self.max_drawdown_lookback.value,
-                "trade_limit": self.max_drawdown_trade_limit.value,
-                "stop_duration_candles": self.max_drawdown_stop_duration.value,
-                "max_allowed_drawdown": self.max_allowed_drawdown.value
-            },
-            {
-                "method": "StoplossGuard",
-                "lookback_period_candles": self.stoploss_guard_lookback.value,
-                "trade_limit": self.stoploss_guard_trade_limit.value,
-                "stop_duration_candles": self.stoploss_guard_stop_duration.value,
-                "only_per_pair": False
-            }
-        ]
+    @informative('1d', 'BTC/USDT')
+    def populate_indicators_btc_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe['ema90'] = ta.EMA(dataframe, timeperiod=90)
+        return dataframe
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         if not metadata['pair'] in self.custom_trade_info:
@@ -325,6 +330,7 @@ class BinHV27_short(IStrategy):
         dataframe.loc[:, 'enter_tag'] = ''
 
         buy_1 = (
+                dataframe['btc_usdt_close_1d'].lt(dataframe['btc_usdt_ema90_1d']) &
                 dataframe['slowsma'].gt(0) &
                 dataframe['close'].lt(dataframe['highsma']) &
                 dataframe['close'].lt(dataframe['lowsma']) &
@@ -338,6 +344,7 @@ class BinHV27_short(IStrategy):
         )
 
         buy_2 = (
+                dataframe['btc_usdt_close_1d'].lt(dataframe['btc_usdt_ema90_1d']) &
                 dataframe['slowsma'].gt(0) &
                 dataframe['close'].lt(dataframe['highsma']) &
                 dataframe['close'].lt(dataframe['lowsma']) &
@@ -351,6 +358,7 @@ class BinHV27_short(IStrategy):
         )
 
         buy_3 = (
+                dataframe['btc_usdt_close_1d'].lt(dataframe['btc_usdt_ema90_1d']) &
                 dataframe['slowsma'].gt(0) &
                 dataframe['close'].lt(dataframe['highsma']) &
                 dataframe['close'].lt(dataframe['lowsma']) &
@@ -363,6 +371,7 @@ class BinHV27_short(IStrategy):
         )
 
         buy_4 = (
+                dataframe['btc_usdt_close_1d'].lt(dataframe['btc_usdt_ema90_1d']) &
                 dataframe['slowsma'].gt(0) &
                 dataframe['close'].lt(dataframe['highsma']) &
                 dataframe['close'].lt(dataframe['lowsma']) &
