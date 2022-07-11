@@ -5,7 +5,7 @@
       "0": 100
     },
     "stoploss": {
-      "stoploss": -0.99
+      "stoploss": -0.1
     },
     "trailing": {
       "trailing_stop": false,
@@ -33,13 +33,7 @@
 		"csell_roi_start": 0.055,
 		"csell_roi_time": 1288,
 		"csell_roi_type": "decay",
-		"csell_trend_type": "none",
-		"cstop_bail_how": "roc",
-		"cstop_bail_roc": -3.415,
-		"cstop_bail_time": 649,
-		"cstop_bail_time_trend": false,
-		"cstop_loss_threshold": -0.023,
-		"cstop_max_stoploss": -0.207
+		"csell_trend_type": "none"
     }
   },
   "ft_stratparam_v": 1,
