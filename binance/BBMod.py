@@ -1,14 +1,18 @@
+from typing import Dict, List
+
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy as np
 import talib.abstract as ta
 import pandas_ta as pta
 import pandas as pd
 
+from skopt.space import Dimension, Integer
+
 from freqtrade.persistence import Trade
 from freqtrade.strategy.interface import IStrategy
 from pandas import DataFrame, Series
 from datetime import datetime
-from freqtrade.strategy import DecimalParameter, IntParameter, informative, CategoricalParameter
+from freqtrade.strategy import DecimalParameter, IntParameter, informative, stoploss_from_open, CategoricalParameter
 from functools import reduce
 import warnings
 warnings.simplefilter(action='ignore', category=pd.errors.PerformanceWarning)
@@ -57,12 +61,12 @@ def williams_r(dataframe: DataFrame, period: int = 14) -> Series:
     highest_high = dataframe["high"].rolling(center=False, window=period).max()
     lowest_low = dataframe["low"].rolling(center=False, window=period).min()
 
-    WR = Series(
+    wr = Series(
         (highest_high - dataframe["close"]) / (highest_high - lowest_low),
         name=f"{period} Williams %R",
     )
 
-    return WR * -100
+    return wr * -100
 
 
 def T3(dataframe, length=5):
@@ -88,62 +92,19 @@ def T3(dataframe, length=5):
     return df['T3Average']
 
 
-def RMI(dataframe, *, length=20, mom=5):
-    """
-    Source: https://github.com/freqtrade/technical/blob/master/technical/indicators/indicators.py#L912
-    """
-    df = dataframe.copy()
+def rmi(dataframe, *, length=20, mom=5):
 
-    df['maxup'] = (df['close'] - df['close'].shift(mom)).clip(lower=0)
-    df['maxdown'] = (df['close'].shift(mom) - df['close']).clip(lower=0)
+    df = dataframe.copy()
+    df["maxup"] = (df["close"] - df["close"].shift(mom)).clip(lower=0)
+    df["maxdown"] = (df["close"].shift(mom) - df["close"]).clip(lower=0)
 
     df.fillna(0, inplace=True)
 
-    df["emaInc"] = ta.EMA(df, price='maxup', timeperiod=length)
-    df["emaDec"] = ta.EMA(df, price='maxdown', timeperiod=length)
+    df["emaInc"] = ta.EMA(df, price="maxup", timeperiod=length)
+    df["emaDec"] = ta.EMA(df, price="maxdown", timeperiod=length)
 
-    df['RMI'] = np.where(df['emaDec'] == 0, 0, 100 - 100 / (1 + df["emaInc"] / df["emaDec"]))
-
+    df["RMI"] = np.where(df["emaDec"] == 0, 0, 100 - 100 / (1 + df["emaInc"] / df["emaDec"]))
     return df["RMI"]
-
-
-def SSLChannels_ATR(dataframe, length=7):
-    """
-    SSL Channels with ATR: https://www.tradingview.com/script/SKHqWzql-SSL-ATR-channel/
-    Credit to @JimmyNixx for python
-    """
-    df = dataframe.copy()
-
-    df['ATR'] = ta.ATR(df, timeperiod=14)
-    df['smaHigh'] = df['high'].rolling(length).mean() + df['ATR']
-    df['smaLow'] = df['low'].rolling(length).mean() - df['ATR']
-    df['hlv'] = np.where(df['close'] > df['smaHigh'], 1, np.where(df['close'] < df['smaLow'], -1, np.NAN))
-    df['hlv'] = df['hlv'].ffill()
-    df['sslDown'] = np.where(df['hlv'] < 0, df['smaHigh'], df['smaLow'])
-    df['sslUp'] = np.where(df['hlv'] < 0, df['smaLow'], df['smaHigh'])
-
-    return df['sslDown'], df['sslUp']
-
-
-def SROC(dataframe, roclen=21, emalen=13, smooth=21):
-    df = dataframe.copy()
-
-    roc = ta.ROC(df, timeperiod=roclen)
-    ema = ta.EMA(df, timeperiod=emalen)
-    sroc = ta.ROC(ema, timeperiod=smooth)
-
-    return sroc
-
-
-def linear_decay(start: float, end: float, start_time: int, end_time: int, trade_time: int) -> float:
-    """
-    Simple linear decay function. Decays from start to end after end_time minutes (starts after start_time minutes)
-    """
-    time = max(0, trade_time - start_time)
-    rate = (start - end) / (end_time - start_time)
-
-    return max(end, start - (rate * time))
-
 
 # #####################################################################################################
 
@@ -159,7 +120,7 @@ class BBMod(IStrategy):
 
     # Run "populate_indicators()" only for new candle.
     process_only_new_candles = True
-    startup_candle_count = 120
+    startup_candle_count = 200
 
     order_types = {
         'entry': 'market',
@@ -180,11 +141,25 @@ class BBMod(IStrategy):
     # Custom stoploss
     use_custom_stoploss = True
 
-    custom_trade_info = {}
-
     # Buy params
-    leverage_optimize = True
-    leverage_num = IntParameter(low=1, high=3, default=1, space='buy', optimize=leverage_optimize)
+    leverage_optimize = False
+    leverage_num = IntParameter(low=1, high=3, default=3, space='buy', optimize=leverage_optimize)
+
+    buy_con_op = True
+    buy_is_bb_checked_enable = CategoricalParameter([True, False], default=True, space='buy', optimize=buy_con_op)
+    buy_is_sqzmom_enable = CategoricalParameter([True, False], default=True, space='buy', optimize=buy_con_op)
+    buy_is_ewo_2_enable = CategoricalParameter([True, False], default=True, space='buy', optimize=buy_con_op)
+    buy_is_r_deadfish_enable = CategoricalParameter([True, False], default=True, space='buy', optimize=buy_con_op)
+    buy_is_clucHA_enable = CategoricalParameter([True, False], default=True, space='buy', optimize=buy_con_op)
+    buy_is_cofi_enable = CategoricalParameter([True, False], default=True, space='buy', optimize=buy_con_op)
+    buy_is_gumbo_enable = CategoricalParameter([True, False], default=True, space='buy', optimize=buy_con_op)
+    buy_is_local_uptrend_enable = CategoricalParameter([True, False], default=True, space='buy', optimize=buy_con_op)
+    buy_is_local_uptrend2_enable = CategoricalParameter([True, False], default=True, space='buy', optimize=buy_con_op)
+    buy_is_local_dip_enable = CategoricalParameter([True, False], default=True, space='buy', optimize=buy_con_op)
+    buy_is_ewo_enable = CategoricalParameter([True, False], default=True, space='buy', optimize=buy_con_op)
+    buy_is_nfi_32_enable = CategoricalParameter([True, False], default=True, space='buy', optimize=buy_con_op)
+    buy_is_nfix_39_enable = CategoricalParameter([True, False], default=True, space='buy', optimize=buy_con_op)
+    buy_is_vwap_enable = CategoricalParameter([True, False], default=True, space='buy', optimize=buy_con_op)
 
     is_optimize_dip = True
     buy_rmi = IntParameter(30, 50, default=35, space='buy', optimize=is_optimize_dip)
@@ -256,7 +231,8 @@ class BBMod(IStrategy):
     is_optimize_clucha = True
     buy_clucha_bbdelta_close = DecimalParameter(0.01, 0.05, default=0.02206, space='buy', optimize=is_optimize_clucha)
     buy_clucha_bbdelta_tail = DecimalParameter(0.7, 1.2, default=1.02515, space='buy', optimize=is_optimize_clucha)
-    buy_clucha_closedelta_close = DecimalParameter(0.001, 0.05, default=0.04401, space='buy', optimize=is_optimize_clucha)
+    buy_clucha_closedelta_close = DecimalParameter(0.001, 0.05, default=0.04401, space='buy',
+                                                   optimize=is_optimize_clucha)
     buy_clucha_rocr_1h = DecimalParameter(0.1, 1.0, default=0.47782, space='buy', optimize=is_optimize_clucha)
 
     is_optimize_gumbo = True
@@ -265,33 +241,64 @@ class BBMod(IStrategy):
     buy_gumbo_cti = DecimalParameter(-0.9, -0.0, default=-0.5, space='buy', optimize=is_optimize_gumbo)
     buy_gumbo_r14 = DecimalParameter(-100, -44, default=-60, space='buy', optimize=is_optimize_gumbo)
 
-    # Custom Stoploss
-    cs_op = True
-    cstop_loss_threshold = DecimalParameter(-0.15, -0.01, default=-0.03, space='sell', load=True, optimize=cs_op)
-    cstop_bail_how = CategoricalParameter(['roc', 'time', 'any', 'none'], default='none', space='sell', load=True,
-                                          optimize=cs_op)
-    cstop_bail_roc = DecimalParameter(-5.0, -1.0, default=-3.0, space='sell', load=True, optimize=cs_op)
-    cstop_bail_time = IntParameter(60, 1440, default=720, space='sell', load=True, optimize=cs_op)
-    cstop_bail_time_trend = CategoricalParameter([True, False], default=True, space='sell', load=True, optimize=cs_op)
-    cstop_max_stoploss = DecimalParameter(-0.30, -0.01, default=-0.10, space='sell', load=True, optimize=cs_op)
-
-    # custom exit
-    ce_op = True
-    csell_pullback_amount = DecimalParameter(0.005, 0.15, default=0.01, space='sell', load=True, optimize=ce_op)
-    csell_roi_type = CategoricalParameter(['static', 'decay', 'step'], default='step', space='sell', load=True,
-                                          optimize=ce_op)
-    csell_roi_start = DecimalParameter(0.01, 0.15, default=0.01, space='sell', load=True, optimize=ce_op)
-    csell_roi_end = DecimalParameter(0.0, 0.01, default=0, space='sell', load=True, optimize=ce_op)
-    csell_roi_time = IntParameter(720, 1440, default=720, space='sell', load=True, optimize=ce_op)
-    csell_trend_type = CategoricalParameter(['rmi', 'ssl', 'candle', 'any', 'none'], default='any', space='sell',
-                                            load=True, optimize=ce_op)
-    csell_pullback = CategoricalParameter([True, False], default=True, space='sell', load=True, optimize=ce_op)
-    csell_pullback_respect_roi = CategoricalParameter([True, False], default=False, space='sell', load=True,
-                                                      optimize=ce_op)
-    csell_endtrend_respect_roi = CategoricalParameter([True, False], default=False, space='sell', load=True,
-                                                      optimize=ce_op)
+    # custom stoploss
+    trailing_optimize = True
+    pHSL = DecimalParameter(-0.990, -0.040, default=-0.1, decimals=3, space='sell', optimize=False)
+    pPF_1 = DecimalParameter(0.008, 0.100, default=0.03, decimals=3, space='sell', optimize=False)
+    pSL_1 = DecimalParameter(0.02, 0.030, default=0.025, decimals=3, space='sell', optimize=trailing_optimize)
+    pPF_2 = DecimalParameter(0.040, 0.200, default=0.080, decimals=3, space='sell', optimize=False)
+    pSL_2 = DecimalParameter(0.070, 0.080, default=0.075, decimals=3, space='sell', optimize=trailing_optimize)
 
     ############################################################################
+    class HyperOpt:
+        @staticmethod
+        def generate_roi_table(params: Dict) -> Dict[int, float]:
+            roi_table = {params['roi_t1']: 0}
+            return roi_table
+
+        @staticmethod
+        def roi_space() -> List[Dimension]:
+            roi_min_time = 10
+            roi_max_time = 360
+
+            roi_limits = {
+                'roi_t1_min': int(roi_min_time),
+                'roi_t1_max': int(roi_max_time)
+            }
+
+            return [
+                Integer(roi_limits['roi_t1_min'], roi_limits['roi_t1_max'], name='roi_t1')
+            ]
+
+    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
+                        current_rate: float, current_profit: float, **kwargs) -> float:
+
+        # hard stoploss profit
+        HSL = self.pHSL.value
+        PF_1 = self.pPF_1.value
+        SL_1 = self.pSL_1.value
+        PF_2 = self.pPF_2.value
+        SL_2 = self.pSL_2.value
+
+        # For profits between PF_1 and PF_2 the stoploss (sl_profit) used is linearly interpolated
+        # between the values of SL_1 and SL_2. For all profits above PL_2 the sl_profit value
+        # rises linearly with current profit, for profits below PF_1 the hard stoploss profit is used.
+
+        if current_profit > PF_2:
+            sl_profit = SL_2 + (current_profit - PF_2)
+        elif current_profit > PF_1:
+            sl_profit = SL_1 + ((current_profit - PF_1) * (SL_2 - SL_1) / (PF_2 - PF_1))
+        else:
+            sl_profit = HSL
+
+        if self.can_short:
+            if (-1 + ((1 - sl_profit) / (1 - current_profit))) <= 0:
+                return 1
+        else:
+            if (1 - ((1 + sl_profit) / (1 + current_profit))) <= 0:
+                return 1
+
+        return stoploss_from_open(sl_profit, current_profit, is_short=trade.is_short)
 
     @informative('1h')
     def populate_indicators_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -313,12 +320,6 @@ class BBMod(IStrategy):
         return dataframe
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-
-        if not metadata['pair'] in self.custom_trade_info:
-            self.custom_trade_info[metadata['pair']] = {}
-            if 'had-trend' not in self.custom_trade_info[metadata["pair"]]:
-                self.custom_trade_info[metadata['pair']]['had-trend'] = False
-
         # Bollinger bands
         bollinger2 = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
         dataframe['bb_lowerband2'] = bollinger2['lower']
@@ -400,7 +401,7 @@ class BBMod(IStrategy):
             dataframe[f'cci_length_{val}'] = ta.CCI(dataframe, val)
 
         for val in self.buy_rmi_length.range:
-            dataframe[f'rmi_length_{val}'] = RMI(dataframe, length=val, mom=4)
+            dataframe[f'rmi_length_{val}'] = rmi(dataframe, length=val, mom=4)
 
         stoch = ta.STOCHRSI(dataframe, 15, 20, 2, 2)
         dataframe['srsi_fk'] = stoch['fastk']
@@ -435,21 +436,6 @@ class BBMod(IStrategy):
         # T3 Averag
         dataframe['T3'] = T3(dataframe)
 
-        # custom exit
-        dataframe['rmi'] = RMI(dataframe, length=24, mom=5)
-        dataframe['rmi-up'] = np.where(dataframe['rmi'] >= dataframe['rmi'].shift(), 1, 0)
-        dataframe['rmi-up-trend'] = np.where(dataframe['rmi-up'].rolling(5).sum() >= 3, 1, 0)
-
-        # Indicators used only for ROI and Custom Stoploss
-        ssldown, sslup = SSLChannels_ATR(dataframe, length=21)
-        dataframe['ssl-dir'] = np.where(sslup > ssldown, 'up', 'down')
-
-        dataframe['sroc'] = SROC(dataframe, roclen=21, emalen=13, smooth=21)
-
-        # Trends, Peaks and Crosses
-        dataframe['candle-up'] = np.where(dataframe['close'] >= dataframe['open'], 1, 0)
-        dataframe['candle-up-trend'] = np.where(dataframe['candle-up'].rolling(5).sum() >= 3, 1, 0)
-
         return dataframe
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -457,13 +443,11 @@ class BBMod(IStrategy):
         conditions = []
         dataframe.loc[:, 'enter_tag'] = ''
 
-        is_dip = (
+        is_bb_checked = (
+                self.buy_is_bb_checked_enable.value &
                 (dataframe[f'rmi_length_{self.buy_rmi_length.value}'] < self.buy_rmi.value) &
                 (dataframe[f'cci_length_{self.buy_cci_length.value}'] <= self.buy_cci.value) &
-                (dataframe['srsi_fk'] < self.buy_srsi_fk.value)
-        )
-
-        is_break = (
+                (dataframe['srsi_fk'] < self.buy_srsi_fk.value) &
                 (dataframe['bb_delta'] > self.buy_bb_delta.value) &
                 (dataframe['bb_width'] > self.buy_bb_width.value) &
                 (dataframe['closedelta'] > dataframe['close'] * self.break_closedelta.value / 1000) &  # from BinH
@@ -471,6 +455,7 @@ class BBMod(IStrategy):
         )
 
         is_sqzmom = (
+                self.buy_is_sqzmom_enable.value &
                 (dataframe['bb_lowerband2'] < dataframe['kc_lowerband_28_1']) &
                 (dataframe['bb_upperband2'] > dataframe['kc_upperband_28_1']) &
                 (dataframe['linreg_val_20'].shift(2) > dataframe['linreg_val_20'].shift(1)) &
@@ -482,6 +467,7 @@ class BBMod(IStrategy):
         )
 
         is_ewo_2 = (
+                self.buy_is_ewo_2_enable.value &
                 (dataframe['ema_200_1h'] > dataframe['ema_200_1h'].shift(12)) &
                 (dataframe['ema_200_1h'].shift(12) > dataframe['ema_200_1h'].shift(24)) &
                 (dataframe['rsi_fast'] < self.buy_rsi_fast_ewo_2.value) &
@@ -492,6 +478,7 @@ class BBMod(IStrategy):
         )
 
         is_r_deadfish = (
+                self.buy_is_r_deadfish_enable.value &
                 (dataframe['ema_100'] < dataframe['ema_200'] * self.buy_r_deadfish_ema.value) &
                 (dataframe['bb_width'] > self.buy_r_deadfish_bb_width.value) &
                 (dataframe['close'] < dataframe['bb_middleband2'] * self.buy_r_deadfish_bb_factor.value) &
@@ -500,7 +487,8 @@ class BBMod(IStrategy):
                 (dataframe['r_14'] < self.buy_r_deadfish_r14.value)
         )
 
-        is_clucHA = (
+        is_clucha = (
+                self.buy_is_clucHA_enable.value &
                 (dataframe['rocr_1h'] > self.buy_clucha_rocr_1h.value) &
                 (
                         (dataframe['bb_lowerband2_40'].shift() > 0) &
@@ -513,6 +501,7 @@ class BBMod(IStrategy):
         )
 
         is_cofi = (
+                self.buy_is_cofi_enable.value &
                 (dataframe['open'] < dataframe['ema_8'] * self.buy_ema_cofi.value) &
                 (qtpylib.crossed_above(dataframe['fastk'], dataframe['fastd'])) &
                 (dataframe['fastk'] < self.buy_fastk.value) &
@@ -524,6 +513,7 @@ class BBMod(IStrategy):
         )
 
         is_gumbo = (
+                self.buy_is_gumbo_enable.value &
                 (dataframe['EWO'] < self.buy_gumbo_ewo_low.value) &
                 (dataframe['bb_middleband2_1h'] >= dataframe['T3_1h']) &
                 (dataframe['T3'] <= dataframe['ema_8'] * self.buy_gumbo_ema.value) &
@@ -532,6 +522,7 @@ class BBMod(IStrategy):
         )
 
         is_local_uptrend = (  # from NFI next gen, credit goes to @iterativ
+                self.buy_is_local_uptrend_enable.value &
                 (dataframe['ema_26'] > dataframe['ema_12']) &
                 (dataframe['ema_26'] - dataframe['ema_12'] > dataframe['open'] * self.buy_ema_diff.value) &
                 (dataframe['ema_26'].shift() - dataframe['ema_12'].shift() > dataframe['open'] / 100) &
@@ -540,6 +531,7 @@ class BBMod(IStrategy):
         )
 
         is_local_uptrend2 = (  # use origin bb_rpb_tsl value
+                self.buy_is_local_uptrend2_enable.value &
                 (dataframe['ema_26'] > dataframe['ema_12']) &
                 (dataframe['ema_26'] - dataframe['ema_12'] > dataframe['open'] * 0.026) &
                 (dataframe['ema_26'].shift() - dataframe['ema_12'].shift() > dataframe['open'] / 100) &
@@ -548,6 +540,7 @@ class BBMod(IStrategy):
         )
 
         is_local_dip = (
+                self.buy_is_local_dip_enable.value &
                 (dataframe['ema_26'] > dataframe['ema_12']) &
                 (dataframe['ema_26'] - dataframe['ema_12'] > dataframe['open'] * self.buy_ema_diff_local_dip.value) &
                 (dataframe['ema_26'].shift() - dataframe['ema_12'].shift() > dataframe['open'] / 100) &
@@ -558,6 +551,7 @@ class BBMod(IStrategy):
         )
 
         is_ewo = (  # from SMA offset
+                self.buy_is_ewo_enable.value &
                 (dataframe['rsi_fast'] < self.buy_rsi_fast.value) &
                 (dataframe['close'] < dataframe['ema_8'] * self.buy_ema_low.value) &
                 (dataframe['EWO'] > self.buy_ewo.value) &
@@ -566,6 +560,7 @@ class BBMod(IStrategy):
         )
 
         is_nfi_32 = (
+                self.buy_is_nfi_32_enable.value &
                 (dataframe['rsi_slow'] < dataframe['rsi_slow'].shift(1)) &
                 (dataframe['rsi_fast'] < 46) &
                 (dataframe['rsi'] > 19) &
@@ -574,6 +569,7 @@ class BBMod(IStrategy):
         )
 
         is_nfix_39 = (
+                self.buy_is_nfix_39_enable.value &
                 (dataframe['ema_200_1h'] > dataframe['ema_200_1h'].shift(12)) &
                 (dataframe['ema_200_1h'].shift(12) > dataframe['ema_200_1h'].shift(24)) &
                 (dataframe['bb_lowerband2_40'].shift().gt(0)) &
@@ -586,6 +582,7 @@ class BBMod(IStrategy):
         )
 
         is_vwap = (
+                self.buy_is_vwap_enable.value &
                 (dataframe['close'] < dataframe['vwap_low']) &
                 (dataframe['tcp_percent_4'] > 0.04) &
                 (dataframe['cti'] < -0.8) &
@@ -594,8 +591,6 @@ class BBMod(IStrategy):
                 (dataframe['rsi_112'] < 60) &
                 (dataframe['volume'] > 0)
         )
-
-        is_bb_checked = is_dip & is_break
 
         conditions.append(is_bb_checked)
         dataframe.loc[is_bb_checked, 'enter_tag'] += 'bb '
@@ -609,8 +604,8 @@ class BBMod(IStrategy):
         conditions.append(is_r_deadfish)
         dataframe.loc[is_r_deadfish, 'enter_tag'] += 'r_deadfish '
 
-        conditions.append(is_clucHA)
-        dataframe.loc[is_clucHA, 'enter_tag'] += 'clucHA '
+        conditions.append(is_clucha)
+        dataframe.loc[is_clucha, 'enter_tag'] += 'clucHA '
 
         conditions.append(is_cofi)
         dataframe.loc[is_cofi, 'enter_tag'] += 'cofi '
@@ -655,100 +650,3 @@ class BBMod(IStrategy):
                  **kwargs) -> float:
 
         return self.leverage_num.value
-
-    """
-    Custom Stoploss
-    """
-
-    def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime, current_rate: float,
-                        current_profit: float, **kwargs) -> float:
-
-        dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
-        last_candle = dataframe.iloc[-1].squeeze()
-        trade_dur = int((current_time.timestamp() - trade.open_date_utc.timestamp()) // 60)
-        in_trend = self.custom_trade_info[trade.pair]['had-trend']
-
-        if current_profit < self.cstop_max_stoploss.value:
-            return 0.01
-
-        # Determine how we sell when we are in a loss
-        if current_profit < self.cstop_loss_threshold.value:
-            if self.cstop_bail_how.value == 'roc' or self.cstop_bail_how.value == 'any':
-                # Dynamic bailout based on rate of change
-                if last_candle['sroc'] <= self.cstop_bail_roc.value:
-                    return 0.01
-            if self.cstop_bail_how.value == 'time' or self.cstop_bail_how.value == 'any':
-                # Dynamic bailout based on time, unless time_trend is true and there is a potential reversal
-                if trade_dur > self.cstop_bail_time.value:
-                    if self.cstop_bail_time_trend.value and in_trend:
-                        return 1
-                    else:
-                        return 0.01
-        return 1
-
-    """
-    Custom Sell
-    """
-
-    def custom_exit(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
-                    current_profit: float, **kwargs):
-
-        dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
-        last_candle = dataframe.iloc[-1].squeeze()
-
-        trade_dur = int((current_time.timestamp() - trade.open_date_utc.timestamp()) // 60)
-        max_profit = max(0, trade.calc_profit_ratio(trade.max_rate))
-        pullback_value = max(0, (max_profit - self.csell_pullback_amount.value))
-        in_trend = False
-
-        # Determine our current ROI point based on the defined type
-        if self.csell_roi_type.value == 'static':
-            min_roi = self.csell_roi_start.value
-        elif self.csell_roi_type.value == 'decay':
-            min_roi = linear_decay(self.csell_roi_start.value, self.csell_roi_end.value, 0, self.csell_roi_time.value,
-                                   trade_dur)
-        elif self.csell_roi_type.value == 'step':
-            if trade_dur < self.csell_roi_time.value:
-                min_roi = self.csell_roi_start.value
-            else:
-                min_roi = self.csell_roi_end.value
-
-        # Determine if there is a trend
-        if self.csell_trend_type.value == 'rmi' or self.csell_trend_type.value == 'any':
-            if last_candle['rmi-up-trend'] == 1:
-                in_trend = True
-        if self.csell_trend_type.value == 'ssl' or self.csell_trend_type.value == 'any':
-            if last_candle['ssl-dir'] == 'up':
-                in_trend = True
-        if self.csell_trend_type.value == 'candle' or self.csell_trend_type.value == 'any':
-            if last_candle['candle-up-trend'] == 1:
-                in_trend = True
-
-        # Don't sell if we are in a trend unless the pullback threshold is met
-        if in_trend and current_profit > 0:
-            # Record that we were in a trend for this trade/pair for a more useful sell message later
-            self.custom_trade_info[trade.pair]['had-trend'] = True
-            # If pullback is enabled and profit has pulled back allow a sell, maybe
-            if self.csell_pullback.value and (current_profit <= pullback_value):
-                if self.csell_pullback_respect_roi.value and current_profit > min_roi:
-                    return 'intrend_pullback_roi'
-                elif not self.csell_pullback_respect_roi.value:
-                    if current_profit > min_roi:
-                        return 'intrend_pullback_roi'
-                    else:
-                        return 'intrend_pullback_noroi'
-            # We are in a trend and pullback is disabled or has not happened or various criteria were not met, hold
-            return None
-        # If we are not in a trend, just use the roi value
-        elif not in_trend:
-            if self.custom_trade_info[trade.pair]['had-trend']:
-                if current_profit > min_roi:
-                    self.custom_trade_info[trade.pair]['had-trend'] = False
-                    return 'trend_roi'
-                elif not self.csell_endtrend_respect_roi.value:
-                    self.custom_trade_info[trade.pair]['had-trend'] = False
-                    return 'trend_noroi'
-            elif current_profit > min_roi:
-                return 'notrend_roi'
-        else:
-            return None
