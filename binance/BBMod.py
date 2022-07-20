@@ -1,12 +1,8 @@
-from typing import Dict, List
-
 import freqtrade.vendor.qtpylib.indicators as qtpylib
 import numpy as np
 import talib.abstract as ta
 import pandas_ta as pta
 import pandas as pd
-
-from skopt.space import Dimension, Integer
 
 from freqtrade.persistence import Trade
 from freqtrade.strategy.interface import IStrategy
@@ -145,7 +141,7 @@ class BBMod(IStrategy):
     leverage_optimize = False
     leverage_num = IntParameter(low=1, high=3, default=3, space='buy', optimize=leverage_optimize)
 
-    buy_con_op = True
+    buy_con_op = False
     buy_is_bb_checked_enable = CategoricalParameter([True, False], default=True, space='buy', optimize=buy_con_op)
     buy_is_sqzmom_enable = CategoricalParameter([True, False], default=True, space='buy', optimize=buy_con_op)
     buy_is_ewo_2_enable = CategoricalParameter([True, False], default=True, space='buy', optimize=buy_con_op)
@@ -161,57 +157,57 @@ class BBMod(IStrategy):
     buy_is_nfix_39_enable = CategoricalParameter([True, False], default=True, space='buy', optimize=buy_con_op)
     buy_is_vwap_enable = CategoricalParameter([True, False], default=True, space='buy', optimize=buy_con_op)
 
-    is_optimize_dip = True
+    is_optimize_dip = False
     buy_rmi = IntParameter(30, 50, default=35, space='buy', optimize=is_optimize_dip)
     buy_cci = IntParameter(-135, -90, default=-133, space='buy', optimize=is_optimize_dip)
     buy_srsi_fk = IntParameter(30, 50, default=25, space='buy', optimize=is_optimize_dip)
     buy_cci_length = IntParameter(25, 45, default=25, space='buy', optimize=is_optimize_dip)
     buy_rmi_length = IntParameter(8, 20, default=8, space='buy', optimize=is_optimize_dip)
 
-    is_optimize_break = True
+    is_optimize_break = False
     buy_bb_width = DecimalParameter(0.065, 0.135, default=0.095, space='buy', optimize=is_optimize_break)
     buy_bb_delta = DecimalParameter(0.018, 0.035, default=0.025, space='buy', optimize=is_optimize_break)
     break_closedelta = DecimalParameter(12.0, 18.0, default=15.0, space='buy', optimize=is_optimize_break)
     break_buy_bb_factor = DecimalParameter(0.990, 0.999, default=0.995, space='buy', optimize=is_optimize_break)
 
-    is_optimize_local_uptrend = True
+    is_optimize_local_uptrend = False
     buy_ema_diff = DecimalParameter(0.022, 0.027, default=0.025, space='buy', optimize=is_optimize_local_uptrend)
     buy_bb_factor = DecimalParameter(0.990, 0.999, default=0.995, space='buy', optimize=is_optimize_local_uptrend)
     buy_closedelta = DecimalParameter(12.0, 18.0, default=15.0, space='buy', optimize=is_optimize_local_uptrend)
 
-    is_optimize_local_uptrend2 = True
+    is_optimize_local_uptrend2 = False
     buy_bb_factor2 = DecimalParameter(0.990, 0.999, default=0.995, space='buy', optimize=is_optimize_local_uptrend2)
 
-    is_optimize_local_dip = True
+    is_optimize_local_dip = False
     buy_ema_diff_local_dip = DecimalParameter(0.022, 0.027, default=0.025, space='buy', optimize=is_optimize_local_dip)
     buy_ema_high_local_dip = DecimalParameter(0.90, 1.2, default=0.942, space='buy', optimize=is_optimize_local_dip)
     buy_closedelta_local_dip = DecimalParameter(12.0, 18.0, default=15.0, space='buy', optimize=is_optimize_local_dip)
     buy_rsi_local_dip = IntParameter(15, 45, default=28, space='buy', optimize=is_optimize_local_dip)
     buy_crsi_local_dip = IntParameter(10, 18, default=10, space='buy', optimize=is_optimize_local_dip)
 
-    is_optimize_ewo = True
+    is_optimize_ewo = False
     buy_rsi_fast = IntParameter(35, 50, default=45, space='buy', optimize=is_optimize_ewo)
     buy_rsi = IntParameter(15, 35, default=35, space='buy', optimize=is_optimize_ewo)
     buy_ewo = DecimalParameter(-6.0, 5, default=-5.585, space='buy', optimize=is_optimize_ewo)
     buy_ema_low = DecimalParameter(0.9, 0.99, default=0.942, space='buy', optimize=is_optimize_ewo)
     buy_ema_high = DecimalParameter(0.95, 1.2, default=1.084, space='buy', optimize=is_optimize_ewo)
 
-    is_optimize_nfix_39 = True
+    is_optimize_nfix_39 = False
     buy_nfix_39_ema = DecimalParameter(0.9, 1.2, default=0.97, space='buy', optimize=is_optimize_nfix_39)
 
-    is_optimize_sqzmom_protection = True
+    is_optimize_sqzmom_protection = False
     buy_sqzmom_ema = DecimalParameter(0.9, 1.2, default=0.97, space='buy', optimize=is_optimize_sqzmom_protection)
     buy_sqzmom_ewo = DecimalParameter(-12, 12, default=0, space='buy', optimize=is_optimize_sqzmom_protection)
     buy_sqzmom_r14 = DecimalParameter(-100, -22, default=-50, space='buy', optimize=is_optimize_sqzmom_protection)
 
-    is_optimize_ewo_2 = True
+    is_optimize_ewo_2 = False
     buy_rsi_fast_ewo_2 = IntParameter(15, 50, default=45, space='buy', optimize=is_optimize_ewo_2)
     buy_rsi_ewo_2 = IntParameter(15, 50, default=35, space='buy', optimize=is_optimize_ewo_2)
     buy_ema_low_2 = DecimalParameter(0.90, 1.2, default=0.970, space='buy', optimize=is_optimize_ewo_2)
     buy_ema_high_2 = DecimalParameter(0.90, 1.2, default=1.087, space='buy', optimize=is_optimize_ewo_2)
     buy_ewo_high_2 = DecimalParameter(2, 12, default=4.179, space='buy', optimize=is_optimize_ewo_2)
 
-    is_optimize_r_deadfish = True
+    is_optimize_r_deadfish = False
     buy_r_deadfish_ema = DecimalParameter(0.90, 1.2, default=1.087, space='buy', optimize=is_optimize_r_deadfish)
     buy_r_deadfish_bb_width = DecimalParameter(0.03, 0.75, default=0.05, space='buy', optimize=is_optimize_r_deadfish)
     buy_r_deadfish_bb_factor = DecimalParameter(0.90, 1.2, default=1.0, space='buy', optimize=is_optimize_r_deadfish)
@@ -220,6 +216,8 @@ class BBMod(IStrategy):
     buy_r_deadfish_r14 = DecimalParameter(-60, -44, default=-60, space='buy', optimize=is_optimize_r_deadfish)
 
     is_optimize_cofi = True
+    buy_roc_1h = IntParameter(-25, 200, default=10, space='buy', optimize=is_optimize_cofi)
+    buy_bb_width_1h = DecimalParameter(0.3, 2.0, default=0.3, space='buy', optimize=is_optimize_cofi)
     buy_ema_cofi = DecimalParameter(0.94, 1.2, default=0.97, space='buy', optimize=is_optimize_cofi)
     buy_fastk = IntParameter(0, 40, default=20, space='buy', optimize=is_optimize_cofi)
     buy_fastd = IntParameter(0, 40, default=20, space='buy', optimize=is_optimize_cofi)
@@ -228,47 +226,47 @@ class BBMod(IStrategy):
     buy_cofi_cti = DecimalParameter(-0.9, -0.0, default=-0.5, space='buy', optimize=is_optimize_cofi)
     buy_cofi_r14 = DecimalParameter(-100, -44, default=-60, space='buy', optimize=is_optimize_cofi)
 
-    is_optimize_clucha = True
+    is_optimize_clucha = False
     buy_clucha_bbdelta_close = DecimalParameter(0.01, 0.05, default=0.02206, space='buy', optimize=is_optimize_clucha)
     buy_clucha_bbdelta_tail = DecimalParameter(0.7, 1.2, default=1.02515, space='buy', optimize=is_optimize_clucha)
     buy_clucha_closedelta_close = DecimalParameter(0.001, 0.05, default=0.04401, space='buy',
                                                    optimize=is_optimize_clucha)
     buy_clucha_rocr_1h = DecimalParameter(0.1, 1.0, default=0.47782, space='buy', optimize=is_optimize_clucha)
 
-    is_optimize_gumbo = True
+    is_optimize_gumbo = False
     buy_gumbo_ema = DecimalParameter(0.9, 1.2, default=0.97, space='buy', optimize=is_optimize_gumbo)
     buy_gumbo_ewo_low = DecimalParameter(-12.0, 5, default=-5.585, space='buy', optimize=is_optimize_gumbo)
     buy_gumbo_cti = DecimalParameter(-0.9, -0.0, default=-0.5, space='buy', optimize=is_optimize_gumbo)
     buy_gumbo_r14 = DecimalParameter(-100, -44, default=-60, space='buy', optimize=is_optimize_gumbo)
 
     # custom stoploss
-    trailing_optimize = True
+    trailing_optimize = False
     pHSL = DecimalParameter(-0.990, -0.040, default=-0.1, decimals=3, space='sell', optimize=False)
     pPF_1 = DecimalParameter(0.008, 0.100, default=0.03, decimals=3, space='sell', optimize=False)
-    pSL_1 = DecimalParameter(0.02, 0.030, default=0.025, decimals=3, space='sell', optimize=trailing_optimize)
+    pSL_1 = DecimalParameter(0.01, 0.030, default=0.025, decimals=3, space='sell', optimize=trailing_optimize)
     pPF_2 = DecimalParameter(0.040, 0.200, default=0.080, decimals=3, space='sell', optimize=False)
-    pSL_2 = DecimalParameter(0.070, 0.080, default=0.075, decimals=3, space='sell', optimize=trailing_optimize)
+    pSL_2 = DecimalParameter(0.050, 0.080, default=0.075, decimals=3, space='sell', optimize=trailing_optimize)
 
     ############################################################################
-    class HyperOpt:
-        @staticmethod
-        def generate_roi_table(params: Dict) -> Dict[int, float]:
-            roi_table = {params['roi_t1']: 0}
-            return roi_table
-
-        @staticmethod
-        def roi_space() -> List[Dimension]:
-            roi_min_time = 10
-            roi_max_time = 360
-
-            roi_limits = {
-                'roi_t1_min': int(roi_min_time),
-                'roi_t1_max': int(roi_max_time)
-            }
-
-            return [
-                Integer(roi_limits['roi_t1_min'], roi_limits['roi_t1_max'], name='roi_t1')
-            ]
+#    class HyperOpt:
+#        @staticmethod
+#        def generate_roi_table(params: Dict) -> Dict[int, float]:
+#            roi_table = {params['roi_t1']: 0}
+#            return roi_table
+#
+#        @staticmethod
+#        def roi_space() -> List[Dimension]:
+#            roi_min_time = 10
+#            roi_max_time = 360
+#
+#            roi_limits = {
+#                'roi_t1_min': int(roi_min_time),
+#                'roi_t1_max': int(roi_max_time)
+#            }
+#
+#            return [
+#                Integer(roi_limits['roi_t1_min'], roi_limits['roi_t1_max'], name='roi_t1')
+#            ]
 
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
                         current_rate: float, current_profit: float, **kwargs) -> float:
@@ -309,11 +307,14 @@ class BBMod(IStrategy):
         dataframe['ha_close'] = heikinashi['close']
         dataframe['rocr'] = ta.ROCR(dataframe['ha_close'], timeperiod=28)
 
+        dataframe['roc'] = ta.ROC(dataframe, timeperiod=9)
+
         # # Bollinger bands
         bollinger2 = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
         dataframe['bb_lowerband2'] = bollinger2['lower']
         dataframe['bb_middleband2'] = bollinger2['mid']
         dataframe['bb_upperband2'] = bollinger2['upper']
+        dataframe['bb_width'] = ((dataframe['bb_upperband2'] - dataframe['bb_lowerband2']) / dataframe['bb_middleband2'])
 
         dataframe['T3'] = T3(dataframe)
 
@@ -502,6 +503,8 @@ class BBMod(IStrategy):
 
         is_cofi = (
                 self.buy_is_cofi_enable.value &
+                (dataframe['roc_1h'] < self.buy_roc_1h.value) &
+                (dataframe['bb_width_1h'] < self.buy_bb_width_1h.value) &
                 (dataframe['open'] < dataframe['ema_8'] * self.buy_ema_cofi.value) &
                 (qtpylib.crossed_above(dataframe['fastk'], dataframe['fastd'])) &
                 (dataframe['fastk'] < self.buy_fastk.value) &
