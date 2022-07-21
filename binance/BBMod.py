@@ -215,7 +215,7 @@ class BBMod(IStrategy):
     buy_r_deadfish_cti = DecimalParameter(-0.6, -0.0, default=-0.5, space='buy', optimize=is_optimize_r_deadfish)
     buy_r_deadfish_r14 = DecimalParameter(-60, -44, default=-60, space='buy', optimize=is_optimize_r_deadfish)
 
-    is_optimize_cofi = True
+    is_optimize_cofi = False
     buy_roc_1h = IntParameter(-25, 200, default=10, space='buy', optimize=is_optimize_cofi)
     buy_bb_width_1h = DecimalParameter(0.3, 2.0, default=0.3, space='buy', optimize=is_optimize_cofi)
     buy_ema_cofi = DecimalParameter(0.94, 1.2, default=0.97, space='buy', optimize=is_optimize_cofi)
@@ -241,7 +241,7 @@ class BBMod(IStrategy):
 
     # custom stoploss
     trailing_optimize = False
-    pHSL = DecimalParameter(-0.990, -0.040, default=-0.1, decimals=3, space='sell', optimize=False)
+    pHSL = DecimalParameter(-0.990, -0.040, default=-0.1, decimals=3, space='sell', optimize=True)
     pPF_1 = DecimalParameter(0.008, 0.100, default=0.03, decimals=3, space='sell', optimize=False)
     pSL_1 = DecimalParameter(0.01, 0.030, default=0.025, decimals=3, space='sell', optimize=trailing_optimize)
     pPF_2 = DecimalParameter(0.040, 0.200, default=0.080, decimals=3, space='sell', optimize=False)
