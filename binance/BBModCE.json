@@ -1,0 +1,47 @@
+{
+  "strategy_name": "BBModCE",
+  "params": {
+    "stoploss": {
+      "stoploss": -0.99
+    },
+    "trailing": {
+      "trailing_stop": false,
+      "trailing_stop_positive": null,
+      "trailing_stop_positive_offset": 0.0,
+      "trailing_only_offset_is_reached": false
+    },
+    "buy": {
+      "buy_adx": 4,
+      "buy_bb_width_1h": 0.74,
+      "buy_cofi_cti": -0.15,
+      "buy_cofi_r14": -44.567,
+      "buy_ema_cofi": 1.14,
+      "buy_ema_high": 1.045,
+      "buy_ema_low": 0.95,
+      "buy_ewo": -3.815,
+      "buy_ewo_high": 3.094,
+      "buy_fastd": 20,
+      "buy_fastk": 37,
+      "buy_roc_1h": 191,
+      "buy_rsi": 30,
+      "buy_rsi_fast": 43,
+      "leverage_num": 3
+    },
+    "sell": {
+      "pHSL": -0.15,
+      "pPF_1": 0.03,
+      "pPF_2": 0.08,
+      "pSL_1": 0.03,
+      "pSL_2": 0.077
+    },
+    "protection": {},
+    "roi": {
+       "0": 0.208,
+       "10": 0.059,
+       "63": 0.03,
+       "115": 0
+    }
+  },
+  "ft_stratparam_v": 1,
+  "export_time": "2022-07-25 02:30:12.766638+00:00"
+}
