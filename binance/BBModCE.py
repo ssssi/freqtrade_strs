@@ -93,12 +93,14 @@ class BBModCE(IStrategy):
     buy_cofi_r14 = DecimalParameter(-100, -44, default=-60, space='buy', optimize=is_optimize_cofi)
 
     # custom stoploss
-    trailing_optimize = True
-    pHSL = DecimalParameter(-0.990, -0.040, default=-0.15, decimals=3, space='sell', optimize=False)
+    trailing_optimize = False
+    pHSL = DecimalParameter(-0.990, -0.040, default=-0.15, decimals=3, space='sell', optimize=True)
     pPF_1 = DecimalParameter(0.008, 0.100, default=0.03, decimals=3, space='sell', optimize=False)
     pSL_1 = DecimalParameter(0.01, 0.030, default=0.025, decimals=3, space='sell', optimize=trailing_optimize)
     pPF_2 = DecimalParameter(0.040, 0.200, default=0.080, decimals=3, space='sell', optimize=False)
     pSL_2 = DecimalParameter(0.050, 0.080, default=0.075, decimals=3, space='sell', optimize=trailing_optimize)
+
+    sell_fastx = IntParameter(70, 80, default=75, space='sell', optimize=True)
 
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
                         current_rate: float, current_profit: float, **kwargs) -> float:
@@ -222,7 +224,21 @@ class BBModCE(IStrategy):
         return dataframe
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        dataframe.loc[(), ['exit_long', 'exit_tag']] = (0, 'long_out')
+        conditions = []
+        dataframe.loc[:, 'exit_tag'] = ''
+
+        fastk_cross = (
+            (qtpylib.crossed_above(dataframe['fastk'], self.sell_fastx.value))
+        )
+
+        conditions.append(fastk_cross)
+        dataframe.loc[fastk_cross, 'exit_tag'] += 'fastk_cross '
+
+        if conditions:
+            dataframe.loc[
+                reduce(lambda x, y: x | y, conditions),
+                'exit_long'] = 1
+
         return dataframe
 
     def leverage(self, pair: str, current_time: datetime, current_rate: float,

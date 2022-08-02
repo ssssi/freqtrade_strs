@@ -1,6 +1,12 @@
 {
   "strategy_name": "BBModCE",
   "params": {
+    "roi": {
+      "0": 0.038,
+      "10": 0.023,
+      "38": 0.012,
+      "54": 0
+    },
     "stoploss": {
       "stoploss": -0.99
     },
@@ -11,37 +17,32 @@
       "trailing_only_offset_is_reached": false
     },
     "buy": {
-      "buy_adx": 4,
-      "buy_bb_width_1h": 0.74,
-      "buy_cofi_cti": -0.15,
-      "buy_cofi_r14": -44.567,
-      "buy_ema_cofi": 1.14,
-      "buy_ema_high": 1.045,
-      "buy_ema_low": 0.95,
-      "buy_ewo": -3.815,
-      "buy_ewo_high": 3.094,
-      "buy_fastd": 20,
-      "buy_fastk": 37,
-      "buy_roc_1h": 191,
-      "buy_rsi": 30,
-      "buy_rsi_fast": 43,
-      "leverage_num": 3
+      "leverage_num": 3,
+      "buy_adx": 11,
+      "buy_bb_width_1h": 1.033,
+      "buy_cofi_cti": -0.248,
+      "buy_cofi_r14": -65.997,
+      "buy_ema_cofi": 1.196,
+      "buy_ema_high": 1.03,
+      "buy_ema_low": 0.962,
+      "buy_ewo": -4.314,
+      "buy_ewo_high": 2.091,
+      "buy_fastd": 18,
+      "buy_fastk": 34,
+      "buy_roc_1h": 26,
+      "buy_rsi": 19,
+      "buy_rsi_fast": 36
     },
     "sell": {
-      "pHSL": -0.15,
       "pPF_1": 0.03,
       "pPF_2": 0.08,
       "pSL_1": 0.03,
-      "pSL_2": 0.077
+      "pSL_2": 0.077,
+      "pHSL": -0.131,
+      "sell_fastx": 72
     },
-    "protection": {},
-    "roi": {
-      "0": 0.132,
-      "10": 0.058,
-      "57": 0.031,
-      "110": 0
-    }
+    "protection": {}
   },
   "ft_stratparam_v": 1,
-  "export_time": "2022-07-26 07:03:22.216260+00:00"
+  "export_time": "2022-08-02 05:08:44.120485+00:00"
 }
