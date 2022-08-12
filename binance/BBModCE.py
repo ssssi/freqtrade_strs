@@ -94,13 +94,13 @@ class BBModCE(IStrategy):
 
     # custom stoploss
     trailing_optimize = False
-    pHSL = DecimalParameter(-0.990, -0.040, default=-0.15, decimals=3, space='sell', optimize=True)
+    pHSL = DecimalParameter(-0.990, -0.040, default=-0.15, decimals=3, space='sell', optimize=False)
     pPF_1 = DecimalParameter(0.008, 0.100, default=0.03, decimals=3, space='sell', optimize=False)
     pSL_1 = DecimalParameter(0.01, 0.030, default=0.025, decimals=3, space='sell', optimize=trailing_optimize)
     pPF_2 = DecimalParameter(0.040, 0.200, default=0.080, decimals=3, space='sell', optimize=False)
     pSL_2 = DecimalParameter(0.050, 0.080, default=0.075, decimals=3, space='sell', optimize=trailing_optimize)
 
-    sell_fastx = IntParameter(70, 80, default=75, space='sell', optimize=True)
+    sell_fastx = IntParameter(50, 100, default=75, space='sell', optimize=True)
 
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
                         current_rate: float, current_profit: float, **kwargs) -> float:
