@@ -17,21 +17,25 @@
       "trailing_only_offset_is_reached": false
     },
     "buy": {
-      "buy_adx": 11,
-      "buy_bb_width_1h": 1.033,
-      "buy_cofi_cti": -0.248,
-      "buy_cofi_r14": -65.997,
-      "buy_ema_cofi": 1.196,
-      "buy_ema_high": 1.03,
-      "buy_ema_low": 0.962,
-      "buy_ewo": -4.314,
-      "buy_ewo_high": 2.091,
-      "buy_fastd": 18,
-      "buy_fastk": 34,
-      "buy_roc_1h": 26,
-      "buy_rsi": 19,
-      "buy_rsi_fast": 36,
-      "leverage_num": 3
+      "leverage_num": 3,
+      "buy_adx": 0,
+      "buy_bb_width_1h": 1.303,
+      "buy_cofi_cti": -0.376,
+      "buy_cofi_r14": -73.436,
+      "buy_cti_32": -0.6,
+      "buy_ema_cofi": 1.138,
+      "buy_ema_high": 1.127,
+      "buy_ema_low": 0.99,
+      "buy_ewo": 2.02,
+      "buy_ewo_high": 3.423,
+      "buy_fastd": 26,
+      "buy_fastk": 22,
+      "buy_roc_1h": 128,
+      "buy_rsi": 33,
+      "buy_rsi_32": 15,
+      "buy_rsi_fast": 50,
+      "buy_rsi_fast_32": 56,
+      "buy_sma15_32": 0.941
     },
     "sell": {
       "pHSL": -0.131,
@@ -44,5 +48,5 @@
     "protection": {}
   },
   "ft_stratparam_v": 1,
-  "export_time": "2022-08-12 04:30:11.712092+00:00"
+  "export_time": "2022-08-12 06:13:02.411769+00:00"
 }

@@ -92,6 +92,12 @@ class BBModCE(IStrategy):
     buy_cofi_cti = DecimalParameter(-0.9, -0.0, default=-0.5, space='buy', optimize=is_optimize_cofi)
     buy_cofi_r14 = DecimalParameter(-100, -44, default=-60, space='buy', optimize=is_optimize_cofi)
 
+    is_optimize_32 = True
+    buy_rsi_fast_32 = IntParameter(20, 70, default=46, space='buy', optimize=is_optimize_32)
+    buy_rsi_32 = IntParameter(15, 50, default=19, space='buy', optimize=is_optimize_32)
+    buy_sma15_32 = DecimalParameter(0.900, 1, default=0.942, decimals=3, space='buy', optimize=is_optimize_32)
+    buy_cti_32 = DecimalParameter(-1, 0, default=-0.86, decimals=2, space='buy', optimize=is_optimize_32)
+
     # custom stoploss
     trailing_optimize = False
     pHSL = DecimalParameter(-0.990, -0.040, default=-0.15, decimals=3, space='sell', optimize=False)
@@ -201,10 +207,10 @@ class BBModCE(IStrategy):
 
         is_nfi_32 = (
                 (dataframe['rsi_slow'] < dataframe['rsi_slow'].shift(1)) &
-                (dataframe['rsi_fast'] < 46) &
-                (dataframe['rsi'] > 19) &
-                (dataframe['close'] < dataframe['sma_15'] * 0.942) &
-                (dataframe['cti'] < -0.86)
+                (dataframe['rsi_fast'] < self.buy_rsi_fast_32.value) &
+                (dataframe['rsi'] > self.buy_rsi_32.value) &
+                (dataframe['close'] < dataframe['sma_15'] * self.buy_sma15_32.value) &
+                (dataframe['cti'] < self.buy_cti_32.value)
         )
 
         conditions.append(is_cofi)
