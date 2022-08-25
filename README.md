@@ -1,4 +1,4 @@
 # freqtrade-strs
-Some strategies.
+some strategies.
 
-the road ahead will be long and our climb will be steep.
+https://www.freqtrade.io/
