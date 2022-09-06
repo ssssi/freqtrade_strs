@@ -44,13 +44,12 @@
     },
     "pair_whitelist": [],
         "pair_blacklist": [
-        "(BTCUSDT_.*|ETHUSDT_.*)",
-        "(GT|HT)/.*",
+		    "(BTCUSDT_.*|ETHUSDT_.*)",
+        "(GT|HT|TRB|BTCST|BLZ|WNXM|BURGER|WING)/.*",
         "(WBTC|BSV|BTCDOM|DEFI)/.*",
         ".*(_PREMIUM|BEAR|BULL|DOWN|HALF|HEDGE|UP|[1235][SL])/.*",
         "(AUD|BRZ|CAD|CHF|EUR|GBP|HKD|IDRT|JPY|NGN|RUB|SGD|TRY|UAH|USD|ZAR|UST)/.*",
-        "(BUSD|CUSDT|DAI|PAX|PAXG|SUSD|TUSD|USDC|USDT|VAI|USDN)/.*",
-        "(ACM|AFA|ALA|ALL|APL|ASR|ATM|BAR|CAI|CITY|FOR|GOZ|IBFK|LEG|LOCK-1|NAVI|NMR|NOV|OG|PFL|PSG|ROUSH|STV|TH|TRA|UCH|UFC|YBO)/.*"
+        "(BUSD|CUSDT|DAI|PAX|PAXG|SUSD|TUSD|USDC|USDT|VAI|USDN)/.*"
         ]
   },
   "pairlists": [
