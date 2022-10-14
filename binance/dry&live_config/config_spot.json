@@ -59,6 +59,7 @@
             "sort_key": "quoteVolume",
             "refresh_period": 3600
         },
+		{"method": "AgeFilter", "min_days_listed": 7},
         {
                 "method": "VolatilityFilter",
                 "lookback_days": 3,
