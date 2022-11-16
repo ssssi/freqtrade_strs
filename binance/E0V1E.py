@@ -126,8 +126,8 @@ class E0V1E(IStrategy):
                 (dataframe['cti'] < self.buy_cti_32.value)
         )
 
-        #conditions.append(is_ewo)
-        #dataframe.loc[is_ewo, 'enter_tag'] += 'ewo'
+        conditions.append(is_ewo)
+        dataframe.loc[is_ewo, 'enter_tag'] += 'ewo'
 
         conditions.append(buy_1)
         dataframe.loc[buy_1, 'enter_tag'] += 'buy_1'
