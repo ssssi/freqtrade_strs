@@ -145,6 +145,8 @@ class E0V1E(IStrategy):
         if current_time - timedelta(minutes=int(self.delay_time.value)) > trade.open_date_utc:
             if current_profit >= -0.01:
                 return -0.005
+         
+        return self.stoploss
 
     def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                     current_profit: float, **kwargs) -> Optional[Union[str, bool]]:
