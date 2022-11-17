@@ -139,6 +139,13 @@ class E0V1E(IStrategy):
 
         return dataframe
 
+    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                        current_profit: float, **kwargs) -> float:
+
+        if current_time - timedelta(minutes=int(self.delay_time.value)) > trade.open_date_utc:
+            if current_profit >= -0.01:
+                return -0.005
+
     def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                     current_profit: float, **kwargs) -> Optional[Union[str, bool]]:
 
@@ -148,10 +155,6 @@ class E0V1E(IStrategy):
         if current_profit > 0:
             if current_candle["fastk"] > self.sell_fastx.value:
                 return "sell_fastk"
-
-        if current_time - timedelta(minutes=int(self.delay_time.value)) > trade.open_date_utc:
-            if current_profit >= -0.01:
-                return "sell_delay_time"
 
         # stoploss - deadfish
         if ((current_profit < self.sell_deadfish_profit.value)
