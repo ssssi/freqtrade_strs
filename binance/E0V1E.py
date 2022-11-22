@@ -47,7 +47,7 @@ class E0V1E(IStrategy):
     stoploss = -0.1
 
     # Custom stoploss
-    use_custom_stoploss = False
+    use_custom_stoploss = True
 
     is_optimize_ewo = True
     buy_rsi_fast = IntParameter(35, 50, default=45, space='buy', optimize=is_optimize_ewo)
@@ -144,7 +144,11 @@ class E0V1E(IStrategy):
 
         if current_time - timedelta(minutes=int(self.delay_time.value)) > trade.open_date_utc:
             if current_profit >= -0.01:
-                return -0.005
+                return -0.003
+
+        if current_time - timedelta(minutes=int(self.delay_time.value) * 2) > trade.open_date_utc:
+            if current_profit >= -0.02:
+                return -0.006
          
         return self.stoploss
 
