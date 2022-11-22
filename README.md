@@ -2,7 +2,9 @@
 some strategies.
 
 How do i hyper my str.
+
 SortinoHyperOptLossDaily for buy signal
+
 SortinoHyperOptLoss for sell signal
 
 For help:
