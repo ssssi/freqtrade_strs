@@ -8,6 +8,7 @@ SortinoHyperOptLossDaily for buy signal
 SortinoHyperOptLoss for sell signal
 
 For help:
+
 https://www.freqtrade.io/
 
 Freqtrade official discard
