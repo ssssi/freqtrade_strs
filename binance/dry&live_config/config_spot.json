@@ -45,7 +45,7 @@
     "pair_whitelist": [],
         "pair_blacklist": [
         "(BTCUSDT_.*|ETHUSDT_.*)",
-        "(GT|HT|FTT|SUN|OM|RIF|AION|TORN|TCT|MLN|BTC|ETH|LTC|BNB|SUSHI|VITE|TVK)/.*",
+        "(GT|HT|FTT|SUN|OM|RIF|AION|TORN|TCT|MLN|BTC|ETH|BNB|SUSHI|VITE|TVK|YFII)/.*",
         "(WBTC|BSV|BTCDOM|DEFI)/.*",
         ".*(_PREMIUM|BEAR|BULL|HALF|HEDGE|DOWN|UP|[1235][SL])/.*",
         "(AUD|BRZ|CAD|CHF|EUR|GBP|HKD|IDRT|JPY|NGN|RUB|SGD|TRY|UAH|USD|ZAR|UST)/.*",
