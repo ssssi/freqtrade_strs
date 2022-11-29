@@ -45,7 +45,8 @@
     "pair_whitelist": [],
         "pair_blacklist": [
         "(BTCUSDT_.*|ETHUSDT_.*)",
-        "(GT|HT|FTT|SUN|OM|RIF|AION|TORN|TCT|MLN|BTC|ETH|BNB|SUSHI|VITE|TVK|YFII)/.*",
+//        "(GT|HT|FTT|SUN|OM|RIF|AION|TORN|TCT|MLN|BTC|ETH|BNB|SUSHI|VITE|TVK|YFII)/.*",
+        "(GT|HT|FTT|OM|TCT|MLN|BTC|ETH|BNB|SUSHI|VITE|YFII)/.*",
         "(WBTC|BSV|BTCDOM|DEFI)/.*",
         ".*(_PREMIUM|BEAR|BULL|HALF|HEDGE|DOWN|UP|[1235][SL])/.*",
         "(AUD|BRZ|CAD|CHF|EUR|GBP|HKD|IDRT|JPY|NGN|RUB|SGD|TRY|UAH|USD|ZAR|UST)/.*",
@@ -59,20 +60,20 @@
             "sort_key": "quoteVolume",
             "refresh_period": 3600
         },
-		{"method": "AgeFilter", "min_days_listed": 7},
-        {
-                "method": "VolatilityFilter",
-                "lookback_days": 3,
-                "min_volatility": 0.02,
-                "max_volatility": 0.75,
-                "refresh_period": 3600
-        },
-        {
-            "method": "RangeStabilityFilter",
-            "lookback_days": 3,
-            "min_rate_of_change": 0.05,
-            "refresh_period": 3600
-        },
+//		{"method": "AgeFilter", "min_days_listed": 7},
+//        {
+//                "method": "VolatilityFilter",
+//                "lookback_days": 3,
+//                "min_volatility": 0.02,
+//                "max_volatility": 0.75,
+//                "refresh_period": 3600
+//        },
+//        {
+//            "method": "RangeStabilityFilter",
+//            "lookback_days": 3,
+//            "min_rate_of_change": 0.05,
+//            "refresh_period": 3600
+//        },
         {
       "method": "ShuffleFilter"
         }
