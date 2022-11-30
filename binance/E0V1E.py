@@ -69,7 +69,8 @@ class E0V1E(IStrategy):
     sell_deadfish_volume_factor = DecimalParameter(1, 2.5, default=1.0, space='sell', optimize=is_optimize_deadfish)
 
     sell_fastx = IntParameter(50, 100, default=75, space='sell', optimize=False)
-    delay_time = IntParameter(90, 1440, default=300, space='sell', optimize=True)
+    delay_time = IntParameter(90, 1440, default=300, space='sell', optimize=False)
+    fask_trailing = DecimalParameter(0.001, 0.02, default=0.001, space='sell', optimize=True)
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
@@ -149,6 +150,13 @@ class E0V1E(IStrategy):
         if current_time - timedelta(minutes=int(self.delay_time.value) * 2) > trade.open_date_utc:
             if current_profit >= -0.02:
                 return -0.006
+        
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+        current_candle = dataframe.iloc[-1].squeeze()
+
+        if current_profit > 0:
+            if current_candle["fastk"] > self.sell_fastx.value:
+                return self.fask_trailing.value
          
         return self.stoploss
 
@@ -158,9 +166,9 @@ class E0V1E(IStrategy):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         current_candle = dataframe.iloc[-1].squeeze()
 
-        if current_profit > 0:
-            if current_candle["fastk"] > self.sell_fastx.value:
-                return "sell_fastk"
+        # if current_profit > 0:
+        #     if current_candle["fastk"] > self.sell_fastx.value:
+        #         return "sell_fastk"
 
         # stoploss - deadfish
         if ((current_profit < self.sell_deadfish_profit.value)
