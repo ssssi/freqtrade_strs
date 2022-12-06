@@ -1,0 +1,36 @@
+diff --git a/freqtrade/freqtradebot.py b/freqtrade/freqtradebot.py
+index ea7c2f1..4c42794 100644
+--- a/freqtrade/freqtradebot.py
++++ b/freqtrade/freqtradebot.py
+@@ -1617,6 +1617,9 @@ class FreqtradeBot(LoggingMixin):
+         current_rate = self.exchange.get_rate(
+             trade.pair, side='exit', is_short=trade.is_short, refresh=False) if not fill else None
+ 
++        min_profit = (trade.calc_profit_ratio(trade.min_rate) * 100)
++        max_profit = (trade.calc_profit_ratio(trade.max_rate) * 100)
++
+         # second condition is for mypy only; order will always be passed during sub trade
+         if sub_trade and order is not None:
+             amount = order.safe_filled if fill else order.amount
+@@ -1660,6 +1663,8 @@ class FreqtradeBot(LoggingMixin):
+             'fiat_currency': self.config.get('fiat_display_currency'),
+             'sub_trade': sub_trade,
+             'cumulative_profit': trade.realized_profit,
++            'min_profit': min_profit,
++            'max_profit': max_profit,
+         }
+ 
+         # Send the message
+diff --git a/freqtrade/rpc/telegram.py b/freqtrade/rpc/telegram.py
+index 2473738..0beabdd 100644
+--- a/freqtrade/rpc/telegram.py
++++ b/freqtrade/rpc/telegram.py
+@@ -374,6 +374,8 @@ class Telegram(RPCHandler):
+             message += ")`"
+         else:
+             message += f"\n*Duration:* `{msg['duration']} ({msg['duration_min']:.1f} min)`"
++            message += f"\n*Min Profit:* `{msg['min_profit']:.2f}%`"
++            message += f"\n*Max Profit:* `{msg['max_profit']:.2f}%`"
+         return message
+ 
+     def compose_message(self, msg: Dict[str, Any], msg_type: RPCMessageType) -> Optional[str]:
