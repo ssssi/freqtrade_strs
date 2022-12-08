@@ -150,8 +150,12 @@ class E0V1E(IStrategy):
             if current_profit >= -0.02:
                 return -0.006
 
+            # stoploss in -15%.no longer hold
+            if current_profit < -0.15:
+                return -0.001
+
             # reopen stoploss to avoid greater loss
-            self.stoploss = -0.15
+            # self.stoploss = -0.15
 
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         current_candle = dataframe.iloc[-1].squeeze()
