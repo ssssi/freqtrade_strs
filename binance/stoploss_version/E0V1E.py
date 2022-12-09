@@ -151,7 +151,7 @@ class E0V1E(IStrategy):
                 return -0.006
 
             # stoploss in -15%.no longer hold
-            if current_profit < -0.15:
+            if current_profit > -0.16:
                 return -0.001
 
             # reopen stoploss to avoid greater loss
