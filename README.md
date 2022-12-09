@@ -1,7 +1,7 @@
 # freqtrade-strs
 ## some strategies.
 
-How do i hyper my str.
+How do i hyper my str(current use is E0V1E.py).
 
 SortinoHyperOptLossDaily for buy signal
 
