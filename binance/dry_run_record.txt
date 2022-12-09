@@ -1,0 +1,18 @@
+2022/12/9
+/profit
+
+ROI: Closed trades
+∙ 505.088 USDT (1.30%) (50.51 Σ%)
+∙ 3515.415 CNY
+ROI: All trades
+∙ 505.088 USDT (1.30%) (50.51 Σ%)
+∙ 3515.415 CNY
+Total Trade Count: 95
+First Trade opened: 3 weeks ago
+Latest Trade opened: an hour ago
+Win / Loss: 81 / 14
+Avg. Duration: 6:14:56
+Best Performing: VIDT/USDT: 34.24%
+Trading volume: 77224.96 USDT
+Profit factor: 3.06
+Max Drawdown: 3.34% (50.064 USDT)
