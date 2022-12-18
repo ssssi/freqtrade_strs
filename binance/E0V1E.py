@@ -150,6 +150,11 @@ class E0V1E(IStrategy):
             if current_profit >= -0.02:
                 return -0.006
 
+        # if hold > 1 day.sell in stoploss -0.05
+        if current_time - timedelta(minutes=1440) > trade.open_date_utc:
+            if current_profit >= -0.05:
+                return -0.001
+
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         current_candle = dataframe.iloc[-1].squeeze()
 
