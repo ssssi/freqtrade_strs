@@ -142,6 +142,9 @@ class E0V1E(IStrategy):
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                         current_profit: float, **kwargs) -> float:
 
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+        current_candle = dataframe.iloc[-1].squeeze()
+
         if current_time - timedelta(minutes=int(self.delay_time.value)) > trade.open_date_utc:
             if current_profit >= -0.01:
                 return -0.003
@@ -151,12 +154,18 @@ class E0V1E(IStrategy):
                 return -0.006
 
         # if hold > 1 day.sell in stoploss -0.05
-        if current_time - timedelta(minutes=1440) > trade.open_date_utc:
+        if current_time - timedelta(days=1) > trade.open_date_utc:
             if current_profit >= -0.05:
                 return -0.001
 
-        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
-        current_candle = dataframe.iloc[-1].squeeze()
+        enter_tag = ''
+        if hasattr(trade, 'enter_tag') and trade.enter_tag is not None:
+            enter_tag = trade.enter_tag
+        enter_tags = enter_tag.split()
+
+        if "ewo" in enter_tags:
+            if current_profit >= 0.05:
+                return -0.015
 
         if current_profit > 0:
             if current_candle["fastk"] > self.sell_fastx.value:
