@@ -13,5 +13,7 @@ For help:
 
 https://www.freqtrade.io/
 
-Freqtrade official discard
+Freqtrade official discard:
+
+https://discord.gg/e8dkbJsKf5
 
