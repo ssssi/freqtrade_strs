@@ -17,5 +17,5 @@ Freqtrade official discard:
 
 https://discord.gg/e8dkbJsKf5
 
-if you have any question you can contact me in discard @E0V1E.
+if you have any question you can contact me in discard:@E0V1E.
 
