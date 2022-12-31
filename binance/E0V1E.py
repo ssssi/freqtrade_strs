@@ -20,7 +20,7 @@ def ewo(dataframe, ema_length=5, ema2_length=35):
 
 class E0V1E(IStrategy):
     minimal_roi = {
-        "0": 100
+        "0": 10
     }
 
     # Optimal timeframe for the strategy
