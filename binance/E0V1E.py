@@ -23,10 +23,8 @@ class E0V1E(IStrategy):
         "0": 10
     }
 
-    # Optimal timeframe for the strategy
     timeframe = '5m'
 
-    # Run "populate_indicators()" only for new candle.
     process_only_new_candles = True
     startup_candle_count = 20
 
@@ -43,10 +41,8 @@ class E0V1E(IStrategy):
         'stoploss_on_exchange_market_ratio': 0.99
     }
 
-    # Disabled
     stoploss = -0.99
 
-    # Custom stoploss
     use_custom_stoploss = True
 
     is_optimize_ewo = True
@@ -143,7 +139,6 @@ class E0V1E(IStrategy):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         current_candle = dataframe.iloc[-1].squeeze()
 
-        # if hold > 1 day.sell in loss less than -0.02 in exit signal
         if current_time - timedelta(minutes=60) > trade.open_date_utc:
             if (current_candle["fastk"] > self.sell_fastx.value) and (current_profit > -0.01):
                 return -0.001
