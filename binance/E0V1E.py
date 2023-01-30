@@ -144,8 +144,12 @@ class E0V1E(IStrategy):
         current_candle = dataframe.iloc[-1].squeeze()
 
         # if hold > 1 day.sell in loss less than -0.02 in exit signal
+        if current_time - timedelta(minutes=60) > trade.open_date_utc:
+            if (current_candle["fastk"] > self.sell_fastx.value) and (current_profit > -0.01):
+                return -0.001
+
         if current_time - timedelta(days=1) > trade.open_date_utc:
-            if (current_candle["fastk"] > self.sell_fastx.value) and (current_profit > -0.02):
+            if (current_candle["fastk"] > self.sell_fastx.value) and (current_profit > -0.05):
                 return -0.001
 
         enter_tag = ''
