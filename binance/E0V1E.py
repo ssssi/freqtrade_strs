@@ -41,8 +41,10 @@ class E0V1E(IStrategy):
         'stoploss_on_exchange_market_ratio': 0.99
     }
 
+    # Disabled
     stoploss = -0.99
 
+    # Custom stoploss
     use_custom_stoploss = True
 
     is_optimize_ewo = True
@@ -139,14 +141,6 @@ class E0V1E(IStrategy):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         current_candle = dataframe.iloc[-1].squeeze()
 
-        if current_time - timedelta(minutes=60) > trade.open_date_utc:
-            if (current_candle["fastk"] > self.sell_fastx.value) and (current_profit > -0.01):
-                return -0.001
-
-        if current_time - timedelta(days=1) > trade.open_date_utc:
-            if (current_candle["fastk"] > self.sell_fastx.value) and (current_profit > -0.05):
-                return -0.001
-
         enter_tag = ''
         if hasattr(trade, 'enter_tag') and trade.enter_tag is not None:
             enter_tag = trade.enter_tag
@@ -158,6 +152,13 @@ class E0V1E(IStrategy):
 
         if current_profit > 0:
             if current_candle["fastk"] > self.sell_fastx.value:
+                return -0.001
+
+            if current_candle["rsi"] > 80:
+                return -0.001
+
+        if current_profit < 0:
+            if current_candle["rsi"] > 90:
                 return -0.001
 
         return self.stoploss
