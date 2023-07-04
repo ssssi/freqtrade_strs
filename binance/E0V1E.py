@@ -15,10 +15,8 @@ class E0V1E(IStrategy):
         "0": 10
     }
 
-    # Optimal timeframe for the strategy
     timeframe = '5m'
 
-    # Run "populate_indicators()" only for new candle.
     process_only_new_candles = True
     startup_candle_count = 20
 
@@ -35,10 +33,9 @@ class E0V1E(IStrategy):
         'stoploss_on_exchange_market_ratio': 0.99
     }
 
-    # Disabled
     stoploss = -0.1
 
-    # Custom stoploss
+    # custom stoploss
     use_custom_stoploss = True
 
     is_optimize_32 = True
@@ -46,7 +43,6 @@ class E0V1E(IStrategy):
     buy_rsi_32 = IntParameter(15, 50, default=19, space='buy', optimize=is_optimize_32)
     buy_sma15_32 = DecimalParameter(0.900, 1, default=0.942, decimals=3, space='buy', optimize=is_optimize_32)
     buy_cti_32 = DecimalParameter(-1, 0, default=-0.86, decimals=2, space='buy', optimize=is_optimize_32)
-
 
     sell_fastx = IntParameter(50, 100, default=75, space='sell', optimize=True)
 
@@ -61,7 +57,6 @@ class E0V1E(IStrategy):
 
         # profit sell indicators
         stoch_fast = ta.STOCHF(dataframe, 5, 3, 0, 3, 0)
-        dataframe['fastd'] = stoch_fast['fastd']
         dataframe['fastk'] = stoch_fast['fastk']
 
         return dataframe
