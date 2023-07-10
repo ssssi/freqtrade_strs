@@ -1,12 +1,12 @@
-from datetime import datetime, timedelta
-from typing import Optional, Union
-import freqtrade.vendor.qtpylib.indicators as qtpylib
+from datetime import datetime
 import talib.abstract as ta
 import pandas_ta as pta
+from technical import qtpylib
+
 from freqtrade.persistence import Trade
 from freqtrade.strategy.interface import IStrategy
 from pandas import DataFrame
-from freqtrade.strategy import DecimalParameter, IntParameter
+from freqtrade.strategy import DecimalParameter, IntParameter, informative
 from functools import reduce
 
 
@@ -18,7 +18,7 @@ class E0V1E(IStrategy):
     timeframe = '5m'
 
     process_only_new_candles = True
-    startup_candle_count = 20
+    startup_candle_count = 120
 
     order_types = {
         'entry': 'market',
@@ -33,9 +33,9 @@ class E0V1E(IStrategy):
         'stoploss_on_exchange_market_ratio': 0.99
     }
 
-    stoploss = -0.1
+    stoploss = -0.99
 
-    # custom stoploss
+    # Custom stoploss
     use_custom_stoploss = True
 
     is_optimize_32 = True
@@ -45,6 +45,15 @@ class E0V1E(IStrategy):
     buy_cti_32 = DecimalParameter(-1, 0, default=-0.86, decimals=2, space='buy', optimize=is_optimize_32)
 
     sell_fastx = IntParameter(50, 100, default=75, space='sell', optimize=True)
+
+    @informative('1d', 'BTC/USDT')
+    def populate_indicators_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        # # Bollinger bands
+        bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
+        dataframe['bollmid'] = bollinger['mid']
+        dataframe['ma120'] = ta.MA(dataframe, timeperiod=120)
+
+        return dataframe
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
@@ -57,6 +66,7 @@ class E0V1E(IStrategy):
 
         # profit sell indicators
         stoch_fast = ta.STOCHF(dataframe, 5, 3, 0, 3, 0)
+        dataframe['fastd'] = stoch_fast['fastd']
         dataframe['fastk'] = stoch_fast['fastk']
 
         return dataframe
@@ -87,12 +97,21 @@ class E0V1E(IStrategy):
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                         current_profit: float, **kwargs) -> float:
 
+        stake = self.config['stake_currency'].lower()
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         current_candle = dataframe.iloc[-1].squeeze()
 
-        if current_profit > 0:
-            if current_candle["fastk"] > self.sell_fastx.value:
-                return -0.0001
+        if current_candle[f"btc_{stake}_close_1d"] > current_candle[f"btc_{stake}_bollmid_1d"] and \
+           current_candle[f"btc_{stake}_close_1d"] > current_candle[f"btc_{stake}_ma120_1d"]:
+            if current_profit > 0:
+                if current_candle["fastk"] > self.sell_fastx.value:
+                    return -0.0001
+        else:
+            if current_profit > 0:
+                if current_candle["fastk"] > self.sell_fastx.value:
+                    return -0.0001
+            else:
+                self.stoploss = -0.15
 
         return self.stoploss
 
