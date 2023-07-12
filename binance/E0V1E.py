@@ -1,13 +1,13 @@
 from datetime import datetime
 import talib.abstract as ta
 import pandas_ta as pta
-from technical import qtpylib
-
 from freqtrade.persistence import Trade
 from freqtrade.strategy.interface import IStrategy
 from pandas import DataFrame
-from freqtrade.strategy import DecimalParameter, IntParameter, informative
+from freqtrade.strategy import DecimalParameter, IntParameter
 from functools import reduce
+
+TMP_HOLD = []
 
 
 class E0V1E(IStrategy):
@@ -33,10 +33,7 @@ class E0V1E(IStrategy):
         'stoploss_on_exchange_market_ratio': 0.99
     }
 
-    stoploss = -0.99
-
-    # Custom stoploss
-    use_custom_stoploss = True
+    stoploss = -0.18
 
     is_optimize_32 = True
     buy_rsi_fast_32 = IntParameter(20, 70, default=46, space='buy', optimize=is_optimize_32)
@@ -45,15 +42,6 @@ class E0V1E(IStrategy):
     buy_cti_32 = DecimalParameter(-1, 0, default=-0.86, decimals=2, space='buy', optimize=is_optimize_32)
 
     sell_fastx = IntParameter(50, 100, default=75, space='sell', optimize=True)
-
-    @informative('1d', 'BTC/USDT')
-    def populate_indicators_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        # # Bollinger bands
-        bollinger = qtpylib.bollinger_bands(qtpylib.typical_price(dataframe), window=20, stds=2)
-        dataframe['bollmid'] = bollinger['mid']
-        dataframe['ma120'] = ta.MA(dataframe, timeperiod=120)
-
-        return dataframe
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
@@ -93,26 +81,30 @@ class E0V1E(IStrategy):
 
         return dataframe
 
-    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
-                        current_profit: float, **kwargs) -> float:
+    def custom_exit(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
+                    current_profit: float, **kwargs):
 
-        stake = self.config['stake_currency'].lower()
-        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
+
         current_candle = dataframe.iloc[-1].squeeze()
 
-        if current_candle[f"btc_{stake}_close_1d"] > current_candle[f"btc_{stake}_bollmid_1d"] and \
-           current_candle[f"btc_{stake}_close_1d"] > current_candle[f"btc_{stake}_ma120_1d"]:
-            if current_profit > 0:
-                if current_candle["fastk"] > self.sell_fastx.value:
-                    return -0.0001
-        else:
-            if current_profit > 0:
-                if current_candle["fastk"] > self.sell_fastx.value:
-                    return -0.0001
-            else:
-                self.stoploss = -0.15
+        if current_profit > 0:
+            if current_candle["fastk"] > self.sell_fastx.value:
+                return "fastk_profit_sell"
 
-        return self.stoploss
+        if current_profit <= -0.1:
+            # tmp hold
+            if trade.id not in TMP_HOLD:
+                TMP_HOLD.append(trade.id)
+
+        for i in TMP_HOLD:
+            # start recover sell it
+            if trade.id == i and current_profit > -0.1:
+                if current_candle["fastk"] > self.sell_fastx.value:
+                    TMP_HOLD.remove(i)
+                    return "fastk_loss_sell"
+
+        return None
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
