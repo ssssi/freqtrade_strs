@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import talib.abstract as ta
 import pandas_ta as pta
 from freqtrade.persistence import Trade
@@ -36,10 +36,10 @@ class E0V1E(IStrategy):
     stoploss = -0.18
 
     is_optimize_32 = True
-    buy_rsi_fast_32 = IntParameter(20, 70, default=46, space='buy', optimize=is_optimize_32)
-    buy_rsi_32 = IntParameter(15, 50, default=19, space='buy', optimize=is_optimize_32)
-    buy_sma15_32 = DecimalParameter(0.900, 1, default=0.942, decimals=3, space='buy', optimize=is_optimize_32)
-    buy_cti_32 = DecimalParameter(-1, 0, default=-0.86, decimals=2, space='buy', optimize=is_optimize_32)
+    buy_rsi_fast_32 = IntParameter(20, 70, default=45, space='buy', optimize=is_optimize_32)
+    buy_rsi_32 = IntParameter(15, 50, default=35, space='buy', optimize=is_optimize_32)
+    buy_sma15_32 = DecimalParameter(0.900, 1, default=0.961, decimals=3, space='buy', optimize=is_optimize_32)
+    buy_cti_32 = DecimalParameter(-1, 0, default=-0.58, decimals=2, space='buy', optimize=is_optimize_32)
 
     sell_fastx = IntParameter(50, 100, default=75, space='sell', optimize=True)
 
@@ -87,6 +87,10 @@ class E0V1E(IStrategy):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
 
         current_candle = dataframe.iloc[-1].squeeze()
+
+        if current_time - timedelta(hours=3) > trade.open_date_utc:
+            if (current_candle["fastk"] >= 70) and (current_profit >= 0):
+                return "fastk_profit_sell_delay"
 
         if current_profit > 0:
             if current_candle["fastk"] > self.sell_fastx.value:
