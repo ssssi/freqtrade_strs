@@ -88,6 +88,10 @@ class E0V1E(IStrategy):
 
         current_candle = dataframe.iloc[-1].squeeze()
 
+        if current_time - timedelta(minutes=90) < trade.open_date_utc:
+            if current_profit >= 0.08:
+                return "fastk_profit_sell_fast"
+
         if current_time - timedelta(hours=3) > trade.open_date_utc:
             if (current_candle["fastk"] >= 70) and (current_profit >= 0):
                 return "fastk_profit_sell_delay"
