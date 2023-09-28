@@ -1,7 +1,7 @@
 # freqtrade-strs
 ## some strategies.
 
-## Note:Don't use it directly, you need to optimize these parameters, my dry run results are optimized after running, only need optimized these parameters, nothing else.
+## Note:Don't use it directly(E0V1E.py), you need to optimize these parameters, my dry run results are optimized after running, only need optimized these parameters, nothing else.
 ## Never set the stoploss to -0.99, it's very stupid in my opinion.
 
 is_optimize_32 = True
@@ -17,7 +17,7 @@ buy_cti_32 = DecimalParameter(-1, 0, default=-0.58, decimals=2, space='buy', opt
 sell_fastx = IntParameter(50, 100, default=75, space='sell', optimize=True)
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-How do i hyper my str(current use is E0V1E.py).
+## How do i hyper my str(current use is E0V1E.py).
 
 SortinoHyperOptLossDaily for buy signal
 
