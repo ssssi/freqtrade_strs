@@ -1,6 +1,8 @@
 # freqtrade-strs
 ## some strategies.
 
+# Don't try to create a complex strategy. Simple is often the most effective.
+
 ## Note:Don't use it directly(E0V1E.py), you need to optimize these parameters, my dry run results are optimized after running, only need optimized these parameters, nothing else.
 ## Never set the stoploss to -0.99, it's very stupid in my opinion.
 
