@@ -4,7 +4,7 @@
 # Don't try to create a complex strategy. Simple is often the most effective.
 
 ## Never set the stoploss to -0.99, it's very stupid in my opinion.
-## Note:Don't use it directly(E0V1E.py), you need to optimize these parameters, my dry run results are optimized after running, only need optimized these parameters, nothing else.
+## Note:Don't use it directly(E0V1E.py), you need to optimize the parameters listed below, my dry run results are optimized after running, only need optimized these parameters, nothing else.
 
 is_optimize_32 = True
 
