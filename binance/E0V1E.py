@@ -27,7 +27,7 @@ class E0V1E(IStrategy):
         'force_entry': 'market',
         'force_exit': "market",
         'stoploss': 'market',
-        'stoploss_on_exchange': False,
+        'stoploss_on_exchange': True,
 
         'stoploss_on_exchange_interval': 60,
         'stoploss_on_exchange_market_ratio': 0.99
@@ -95,6 +95,10 @@ class E0V1E(IStrategy):
         if current_time - timedelta(hours=3) > trade.open_date_utc:
             if (current_candle["fastk"] >= 70) and (current_profit >= 0):
                 return "fastk_profit_sell_delay"
+
+        if current_time - timedelta(hours=4) > trade.open_date_utc:
+            if current_profit > -0.06:
+                return "fastk_loss_sell_delay"
 
         if current_profit > 0:
             if current_candle["fastk"] > self.sell_fastx.value:
