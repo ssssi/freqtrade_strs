@@ -7,12 +7,10 @@ from pandas import DataFrame
 from freqtrade.strategy import DecimalParameter, IntParameter
 from functools import reduce
 
-TMP_HOLD = []
-
 
 class E0V1E(IStrategy):
     minimal_roi = {
-        "0": 10
+        "240": 0
     }
 
     timeframe = '5m'
@@ -92,29 +90,19 @@ class E0V1E(IStrategy):
             if current_profit >= 0.08:
                 return "fastk_profit_sell_fast"
 
-        if current_time - timedelta(hours=3) > trade.open_date_utc:
-            if (current_candle["fastk"] >= 70) and (current_profit >= 0):
-                return "fastk_profit_sell_delay"
+        if current_time - timedelta(hours=1) > trade.open_date_utc:
+            if (current_candle["fastk"] > self.sell_fastx.value) and (current_profit >= -0.03):
+                return "fastk_loss_sell_fast"
 
-        if current_time - timedelta(hours=4) > trade.open_date_utc:
-            if current_profit > -0.06:
-                return "fastk_loss_sell_delay"
+        if current_time - timedelta(hours=2) > trade.open_date_utc:
+            if current_time - timedelta(hours=5) < trade.open_date_utc:
+                if current_profit > -0.04:
+                    return "fastk_loss_sell_delay"
 
         if current_profit > 0:
             if current_candle["fastk"] > self.sell_fastx.value:
                 return "fastk_profit_sell"
 
-        if current_profit <= -0.1:
-            # tmp hold
-            if trade.id not in TMP_HOLD:
-                TMP_HOLD.append(trade.id)
-
-        for i in TMP_HOLD:
-            # start recover sell it
-            if trade.id == i and current_profit > -0.1:
-                if current_candle["fastk"] > self.sell_fastx.value:
-                    TMP_HOLD.remove(i)
-                    return "fastk_loss_sell"
 
         return None
 
