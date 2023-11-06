@@ -97,7 +97,7 @@ class E0V1E(IStrategy):
                 return "fastk_profit_sell"
 
         if current_time - timedelta(hours=1) > trade.open_date_utc:
-            if (current_candle["fastk"] > 80) and (current_profit >= -0.03):
+            if (current_candle["fastk"] > self.sell_fastx.value) and (current_profit >= -0.03):
                 return "fastk_loss_sell_fast"
 
         if current_time - timedelta(hours=2) > trade.open_date_utc:
