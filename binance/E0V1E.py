@@ -27,7 +27,7 @@ class E0V1E(IStrategy):
         'force_entry': 'market',
         'force_exit': "market",
         'stoploss': 'market',
-        'stoploss_on_exchange': True,
+        'stoploss_on_exchange': False,
 
         'stoploss_on_exchange_interval': 60,
         'stoploss_on_exchange_market_ratio': 0.99
