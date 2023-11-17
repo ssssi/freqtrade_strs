@@ -101,7 +101,7 @@ class E0V1E(IStrategy):
                 return "fastk_loss_sell_fast"
 
             if current_profit > 0:
-                return "profit_sell_fast""
+                return "profit_sell_fast"
 
         if current_time - timedelta(hours=2) > trade.open_date_utc:
             if current_time - timedelta(hours=5) < trade.open_date_utc:
