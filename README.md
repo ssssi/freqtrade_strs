@@ -31,9 +31,9 @@ For help:
 
 https://www.freqtrade.io/
 
-Freqtrade official discard:
+Freqtrade official discord:
 
 https://discord.gg/e8dkbJsKf5
 
-if you have any question you can contact me in discard:@E0V1E or @evilzzq
+if you have any question you can contact me in discord:@E0V1E or @evilzzq
 
