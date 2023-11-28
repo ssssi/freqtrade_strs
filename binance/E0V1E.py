@@ -97,16 +97,11 @@ class E0V1E(IStrategy):
                 return "fastk_profit_sell"
 
         if current_time - timedelta(minutes=90) > trade.open_date_utc:
-            if (current_candle["fastk"] >= self.sell_fastx.value) and (current_profit >= -0.03):
+            if (current_candle["fastk"] >= self.sell_fastx.value) and (current_profit > -0.03):
                 return "fastk_loss_sell_fast"
 
             if current_profit > 0:
                 return "profit_sell_fast"
-
-        if current_time - timedelta(hours=2) > trade.open_date_utc:
-            if current_time - timedelta(hours=5) < trade.open_date_utc:
-                if current_profit > -0.04:
-                    return "fastk_loss_sell_delay"
 
         if current_time - timedelta(hours=4) > trade.open_date_utc:
             if current_profit <= -0.8:
