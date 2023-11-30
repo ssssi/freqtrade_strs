@@ -8,6 +8,7 @@ from freqtrade.strategy import DecimalParameter, IntParameter
 from functools import reduce
 
 TMP_HOLD = []
+TMP_HOLD_01 = {}
 
 
 class E0V1E(IStrategy):
@@ -88,29 +89,34 @@ class E0V1E(IStrategy):
 
         current_candle = dataframe.iloc[-1].squeeze()
 
-        if current_time - timedelta(minutes=90) < trade.open_date_utc:
-            if current_profit >= 0.08:
-                return "fastk_profit_sell_fast"
+        if current_profit >= 0.08:
+            return "happy_sell"
 
         if current_profit > 0:
             if current_candle["fastk"] > self.sell_fastx.value:
                 return "fastk_profit_sell"
 
         if current_time - timedelta(minutes=90) > trade.open_date_utc:
-            if (current_candle["fastk"] >= self.sell_fastx.value) and (current_profit > -0.03):
-                return "fastk_loss_sell_fast"
+            if (current_candle["fastk"] > self.sell_fastx.value) and (current_profit > -0.03):
+                if trade.id not in TMP_HOLD_01:
+                    TMP_HOLD_01.update({trade.id: current_profit})
 
-            if current_profit > 0:
+            if current_profit >= 0:
+                TMP_HOLD_01.pop(trade.id, None)
                 return "profit_sell_fast"
 
+        if trade.id in TMP_HOLD_01:
+            if (abs(current_profit) - abs(TMP_HOLD_01.get(trade.id))) >= 0.01:
+                TMP_HOLD_01.pop(trade.id, None)
+                return "fastk_loss_sell_fast"
+
         if current_time - timedelta(hours=4) > trade.open_date_utc:
-            if current_profit <= -0.8:
+            if current_profit <= -0.08:
                 if trade.id not in TMP_HOLD:
                     TMP_HOLD.append(trade.id)
 
         for i in TMP_HOLD:
-            # start recover sell it
-            if trade.id == i and current_profit > -0.8:
+            if trade.id == i and current_profit > -0.08:
                 if current_candle["fastk"] > self.sell_fastx.value:
                     TMP_HOLD.remove(i)
                     return "fastk_loss_sell_final"
