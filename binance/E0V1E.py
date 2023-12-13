@@ -7,13 +7,10 @@ from pandas import DataFrame
 from freqtrade.strategy import DecimalParameter, IntParameter
 from functools import reduce
 
-TMP_HOLD = []
-TMP_HOLD_01 = {}
-
 
 class E0V1E(IStrategy):
     minimal_roi = {
-        "240": 0
+        "0": 1
     }
 
     timeframe = '5m'
@@ -28,13 +25,15 @@ class E0V1E(IStrategy):
         'force_entry': 'market',
         'force_exit': "market",
         'stoploss': 'market',
-        'stoploss_on_exchange': True,
+        'stoploss_on_exchange': False,
 
         'stoploss_on_exchange_interval': 60,
         'stoploss_on_exchange_market_ratio': 0.99
     }
 
-    stoploss = -0.2
+    stoploss = -0.25
+
+    use_custom_stoploss = True
 
     is_optimize_32 = True
     buy_rsi_fast_32 = IntParameter(20, 70, default=45, space='buy', optimize=is_optimize_32)
@@ -82,46 +81,23 @@ class E0V1E(IStrategy):
 
         return dataframe
 
-    def custom_exit(self, pair: str, trade: 'Trade', current_time: 'datetime', current_rate: float,
-                    current_profit: float, **kwargs):
-
-        dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
-
+    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                        current_profit: float, **kwargs) -> float:
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         current_candle = dataframe.iloc[-1].squeeze()
 
         if current_profit >= 0.08:
-            return "happy_sell"
+            return -0.01
 
         if current_profit > 0:
             if current_candle["fastk"] > self.sell_fastx.value:
-                return "fastk_profit_sell"
-
-        if current_time - timedelta(minutes=90) > trade.open_date_utc:
-            if (current_candle["fastk"] > self.sell_fastx.value) and (current_profit > -0.03):
-                if trade.id not in TMP_HOLD_01:
-                    TMP_HOLD_01.update({trade.id: current_profit})
-
-            if current_profit >= 0:
-                TMP_HOLD_01.pop(trade.id, None)
-                return "profit_sell_fast"
-
-        if trade.id in TMP_HOLD_01:
-            if (abs(current_profit) - abs(TMP_HOLD_01.get(trade.id))) >= 0.01:
-                TMP_HOLD_01.pop(trade.id, None)
-                return "fastk_loss_sell_fast"
+                return -0.001
 
         if current_time - timedelta(hours=4) > trade.open_date_utc:
-            if current_profit <= -0.08:
-                if trade.id not in TMP_HOLD:
-                    TMP_HOLD.append(trade.id)
+            if current_profit > -0.03:
+                return -0.005
 
-        for i in TMP_HOLD:
-            if trade.id == i and current_profit > -0.08:
-                if current_candle["fastk"] > self.sell_fastx.value:
-                    TMP_HOLD.remove(i)
-                    return "fastk_loss_sell_final"
-
-        return None
+        return self.stoploss
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
