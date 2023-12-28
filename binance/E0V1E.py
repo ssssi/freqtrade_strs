@@ -40,7 +40,7 @@ class E0V1E1(IStrategy):
     sell_fastx = IntParameter(50, 100, default=70, space='sell', optimize=True)
     sell_loss_cci = IntParameter(low=0, high=600, default=148, space='sell', optimize=False)
     sell_loss_cci_profit = DecimalParameter(-0.15, 0, default=-0.04, decimals=2, space='sell', optimize=False)
-	sell_cci = IntParameter(low=0, high=200, default=90, space='sell', optimize=False)
+    sell_cci = IntParameter(low=0, high=200, default=90, space='sell', optimize=False)
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # buy_1 indicators
