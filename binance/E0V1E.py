@@ -38,6 +38,8 @@ class E0V1E(IStrategy):
     buy_sma15_32 = DecimalParameter(0.900, 1, default=0.961, decimals=3, space='buy', optimize=is_optimize_32)
     buy_cti_32 = DecimalParameter(-1, 0, default=-0.58, decimals=2, space='buy', optimize=is_optimize_32)
     sell_fastx = IntParameter(50, 100, default=70, space='sell', optimize=True)
+
+    sell_fastx_1m = IntParameter(50, 100, default=90, space='sell', optimize=False)
     sell_loss_cci = IntParameter(low=0, high=600, default=148, space='sell', optimize=False)
     sell_loss_cci_profit = DecimalParameter(-0.15, 0, default=-0.04, decimals=2, space='sell', optimize=False)
     sell_cci = IntParameter(low=0, high=200, default=90, space='sell', optimize=False)
@@ -93,7 +95,7 @@ class E0V1E(IStrategy):
             if current_candle["cci"] > self.sell_cci.value:
                 return "cci_profit_sell"
 
-            if current_candle["fastk_1m"] > 90:
+            if current_candle["fastk_1m"] > self.sell_fastx_1m.value:
                 return "fastk_profit_sell_1m"
 
         if current_time - timedelta(hours=2) > trade.open_date_utc:
