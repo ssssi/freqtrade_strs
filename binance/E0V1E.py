@@ -42,6 +42,12 @@ class E0V1E(IStrategy):
     sell_loss_cci_profit = DecimalParameter(-0.15, 0, default=-0.04, decimals=2, space='sell', optimize=False)
     sell_cci = IntParameter(low=0, high=200, default=90, space='sell', optimize=False)
 
+    @informative('1m')
+    def populate_indicators_1m(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        stoch_fast = ta.STOCHF(dataframe, 5, 3, 0, 3, 0)
+        dataframe['fastk'] = stoch_fast['fastk']
+        return dataframe
+
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # buy_1 indicators
         dataframe['sma_15'] = ta.SMA(dataframe, timeperiod=15)
@@ -87,6 +93,13 @@ class E0V1E(IStrategy):
             if current_candle["cci"] > self.sell_cci.value:
                 return "cci_profit_sell"
 
+            if current_candle["fastk_1m"] > 90:
+                return "fastk_profit_sell_1m"
+
+        if current_time - timedelta(hours=2) > trade.open_date_utc:
+            if current_profit > 0:
+                return "profit_sell_in_2h"
+                
         if current_candle["high"] >= trade.open_rate:
             if current_candle["cci"] > self.sell_cci.value:
                 return "cci_sell"
