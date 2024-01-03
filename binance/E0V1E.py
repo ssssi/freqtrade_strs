@@ -4,7 +4,7 @@ import pandas_ta as pta
 from freqtrade.persistence import Trade
 from freqtrade.strategy.interface import IStrategy
 from pandas import DataFrame
-from freqtrade.strategy import DecimalParameter, IntParameter
+from freqtrade.strategy import DecimalParameter, IntParameter, informative
 from functools import reduce
 import warnings
 
