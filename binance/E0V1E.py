@@ -29,7 +29,7 @@ class E0V1E(IStrategy):
         'stoploss_on_exchange_interval': 60,
         'stoploss_on_exchange_market_ratio': 0.99
     }
-    stoploss = -0.27
+    stoploss = -0.25
 
     is_optimize_32 = True
     buy_rsi_fast_32 = IntParameter(20, 70, default=45, space='buy', optimize=is_optimize_32)
@@ -79,6 +79,10 @@ class E0V1E(IStrategy):
                     current_profit: float, **kwargs):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
         current_candle = dataframe.iloc[-1].squeeze()
+                        
+        if current_time - timedelta(minutes=10) < trade.open_date_utc:
+            if current_profit >= 0.05:
+                return "profit_sell_fast"
 
         if current_profit > 0:
             if current_candle["fastk"] > self.sell_fastx.value:
