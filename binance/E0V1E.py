@@ -43,7 +43,6 @@ class E0V1E(IStrategy):
     buy_sma15_32 = DecimalParameter(0.900, 1, default=0.961, decimals=3, space='buy', optimize=is_optimize_32)
     buy_cti_32 = DecimalParameter(-1, 1, default=-0.39, decimals=2, space='buy', optimize=is_optimize_32)
     
-    sell_cci = IntParameter(low=0, high=200, default=90, space='sell', optimize=False)
     sell_fastx = IntParameter(50, 100, default=80, space='sell', optimize=True)
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -56,8 +55,6 @@ class E0V1E(IStrategy):
         # profit sell indicators
         stoch_fast = ta.STOCHF(dataframe, 5, 3, 0, 3, 0)
         dataframe['fastk'] = stoch_fast['fastk']
-
-        dataframe['cci'] = ta.CCI(dataframe, timeperiod=20)
 
         dataframe['ma120'] = ta.MA(dataframe, timeperiod=120)
 
@@ -94,15 +91,9 @@ class E0V1E(IStrategy):
             if current_candle["fastk"] > self.sell_fastx.value:
                 return "fastk_profit_sell"
 
-            if current_candle["cci"] > self.sell_cci.value:
-                return "cci_profit_sell"
-
-        if current_candle["high"] >= trade.open_rate:
-            if current_candle["cci"] > self.sell_cci.value:
-                return "cci_sell"
 
         for i in TMP_HOLD:
-            if trade.id == i and current_candle["high"] < current_candle["ma120"]:
+            if trade.id == i and current_candle["close"] < current_candle["ma120"]:
                 TMP_HOLD.remove(i)
                 return "ma120_sell"
 
