@@ -91,7 +91,6 @@ class E0V1E(IStrategy):
             if current_candle["fastk"] > self.sell_fastx.value:
                 return "fastk_profit_sell"
 
-
         for i in TMP_HOLD:
             if trade.id == i and current_candle["close"] < current_candle["ma120"]:
                 TMP_HOLD.remove(i)
