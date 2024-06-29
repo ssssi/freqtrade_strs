@@ -38,12 +38,12 @@ class E0V1E(IStrategy):
     trailing_only_offset_is_reached = True
 
     is_optimize_32 = True
-    buy_rsi_fast_32 = IntParameter(20, 70, default=40, space='buy', optimize=is_optimize_32)
-    buy_rsi_32 = IntParameter(15, 50, default=42, space='buy', optimize=is_optimize_32)
-    buy_sma15_32 = DecimalParameter(0.900, 1, default=0.973, decimals=3, space='buy', optimize=is_optimize_32)
-    buy_cti_32 = DecimalParameter(-1, 0, default=-0.69, decimals=2, space='buy', optimize=is_optimize_32)
+    buy_rsi_fast_32 = IntParameter(20, 70, default=32, space='buy', optimize=is_optimize_32)
+    buy_rsi_32 = IntParameter(15, 50, default=34, space='buy', optimize=is_optimize_32)
+    buy_sma15_32 = DecimalParameter(0.900, 1, default=0.96, decimals=3, space='buy', optimize=is_optimize_32)
+    buy_cti_32 = DecimalParameter(-1, 1, default=0.69, decimals=2, space='buy', optimize=is_optimize_32)
     
-    sell_fastx = IntParameter(50, 100, default=84, space='sell', optimize=True)
+    sell_fastx = IntParameter(50, 100, default=75, space='sell', optimize=True)
     
     cci_opt = True
     sell_loss_cci = IntParameter(low=0, high=600, default=120, space='sell', optimize=cci_opt)
@@ -77,22 +77,8 @@ class E0V1E(IStrategy):
                 (dataframe['close'] < dataframe['sma_15'] * self.buy_sma15_32.value) &
                 (dataframe['cti'] < self.buy_cti_32.value)
         )
-        buy_new = (
-                (
-                    (dataframe['close'] > dataframe['ma120']) |
-                    (dataframe['close'] > dataframe['ma240'])
-                ) &
-                (dataframe['rsi_slow'] < dataframe['rsi_slow'].shift(1)) &
-                (dataframe['rsi_fast'] < 34) &
-                (dataframe['rsi'] > 28) &
-                (dataframe['close'] < dataframe['sma_15'] * 0.96) &
-                (dataframe['cti'] < self.buy_cti_32.value)
-        )
         conditions.append(buy_1)
         dataframe.loc[buy_1, 'enter_tag'] += 'buy_1'
-
-        conditions.append(buy_new)
-        dataframe.loc[buy_new, 'enter_tag'] += 'buy_new'
 
         if conditions:
             dataframe.loc[
@@ -105,7 +91,7 @@ class E0V1E(IStrategy):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
         current_candle = dataframe.iloc[-1].squeeze()
 
-        if trade.open_rate > current_candle["ma120"] or trade.open_rate > current_candle["ma240"]:
+        if trade.open_rate > current_candle["ma120"]:
             if trade.id not in TMP_HOLD:
                 TMP_HOLD.append(trade.id)
 
@@ -118,7 +104,7 @@ class E0V1E(IStrategy):
                 return "cci_loss_sell"
 
         for i in TMP_HOLD:
-            if trade.id == i and current_candle["close"] < current_candle["ma120"] and current_candle["close"] < current_candle["ma240"]:
+            if trade.id == i and current_candle["close"] < current_candle["ma120"]:
                 TMP_HOLD.remove(i)
                 return "ma120_sell"
                 
