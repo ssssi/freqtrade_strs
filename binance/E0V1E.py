@@ -9,10 +9,11 @@ from functools import reduce
 import warnings
 
 warnings.simplefilter(action="ignore", category=RuntimeWarning)
-TMP_HOLD = []
+TMP_HOLD120 = []
+TMP_HOLD240 = []
 
 
-class E0V1E(IStrategy):
+class AB(IStrategy):
     minimal_roi = {
         "0": 1
     }
@@ -38,15 +39,15 @@ class E0V1E(IStrategy):
     trailing_only_offset_is_reached = True
 
     is_optimize_32 = True
-    buy_rsi_fast_32 = IntParameter(20, 70, default=32, space='buy', optimize=is_optimize_32)
-    buy_rsi_32 = IntParameter(15, 50, default=34, space='buy', optimize=is_optimize_32)
-    buy_sma15_32 = DecimalParameter(0.900, 1, default=0.96, decimals=3, space='buy', optimize=is_optimize_32)
-    buy_cti_32 = DecimalParameter(-1, 1, default=0.69, decimals=2, space='buy', optimize=is_optimize_32)
-    
-    sell_fastx = IntParameter(50, 100, default=75, space='sell', optimize=True)
-    
+    buy_rsi_fast_32 = IntParameter(20, 70, default=40, space='buy', optimize=is_optimize_32)
+    buy_rsi_32 = IntParameter(15, 50, default=42, space='buy', optimize=is_optimize_32)
+    buy_sma15_32 = DecimalParameter(0.900, 1, default=0.973, decimals=3, space='buy', optimize=is_optimize_32)
+    buy_cti_32 = DecimalParameter(-1, 0, default=-0.69, decimals=2, space='buy', optimize=is_optimize_32)
+
+    sell_fastx = IntParameter(50, 100, default=84, space='sell', optimize=True)
+
     cci_opt = True
-    sell_loss_cci = IntParameter(low=0, high=600, default=120, space='sell', optimize=cci_opt)
+    sell_loss_cci = IntParameter(low=0, high=600, default=80, space='sell', optimize=cci_opt)
     sell_loss_cci_profit = DecimalParameter(-0.15, 0, default=-0.1, decimals=2, space='sell', optimize=cci_opt)
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -77,8 +78,22 @@ class E0V1E(IStrategy):
                 (dataframe['close'] < dataframe['sma_15'] * self.buy_sma15_32.value) &
                 (dataframe['cti'] < self.buy_cti_32.value)
         )
+        buy_new = (
+                (
+                        (dataframe['close'] > dataframe['ma120']) |
+                        (dataframe['close'] > dataframe['ma240'])
+                ) &
+                (dataframe['rsi_slow'] < dataframe['rsi_slow'].shift(1)) &
+                (dataframe['rsi_fast'] < 34) &
+                (dataframe['rsi'] > 28) &
+                (dataframe['close'] < dataframe['sma_15'] * 0.96) &
+                (dataframe['cti'] < self.buy_cti_32.value)
+        )
         conditions.append(buy_1)
         dataframe.loc[buy_1, 'enter_tag'] += 'buy_1'
+
+        conditions.append(buy_new)
+        dataframe.loc[buy_new, 'enter_tag'] += 'buy_new'
 
         if conditions:
             dataframe.loc[
@@ -92,25 +107,41 @@ class E0V1E(IStrategy):
         current_candle = dataframe.iloc[-1].squeeze()
 
         if trade.open_rate > current_candle["ma120"]:
-            if trade.id not in TMP_HOLD:
-                TMP_HOLD.append(trade.id)
+            if trade.id not in TMP_HOLD120:
+                TMP_HOLD120.append(trade.id)
+
+        if trade.open_rate > current_candle["ma240"]:
+            if trade.id not in TMP_HOLD240:
+                TMP_HOLD240.append(trade.id)
 
         if current_profit > 0:
             if current_candle["fastk"] > self.sell_fastx.value:
+                remove_pubid(trade.id)
                 return "fastk_profit_sell"
 
         if current_profit > self.sell_loss_cci_profit.value:
             if current_candle["cci"] > self.sell_loss_cci.value:
+                remove_pubid(trade.id)
                 return "cci_loss_sell"
 
-        for i in TMP_HOLD:
-            if trade.id == i and current_candle["close"] < current_candle["ma120"]:
-                TMP_HOLD.remove(i)
-                return "ma120_sell"
-                
+        if trade.id in TMP_HOLD120 and current_candle["open"] < current_candle["ma120"]:
+            TMP_HOLD120.remove(trade.id)
+            return "ma120_sell"
+
+        if trade.id in TMP_HOLD240 and current_candle["open"] < current_candle["ma240"]:
+            TMP_HOLD240.remove(trade.id)
+            return "ma240_sell"
 
         return None
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[:, ['exit_long', 'exit_tag']] = (0, 'long_out')
         return dataframe
+
+
+def remove_pubid(trade_id):
+    if trade_id in TMP_HOLD120:
+        TMP_HOLD120.remove(trade_id)
+
+    if trade_id in TMP_HOLD240:
+        TMP_HOLD240.remove(trade_id)
