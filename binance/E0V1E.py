@@ -9,7 +9,6 @@ from functools import reduce
 import warnings
 
 warnings.simplefilter(action="ignore", category=RuntimeWarning)
-TMP_HOLD120 = []
 
 
 class E0V1E(IStrategy):
@@ -90,10 +89,6 @@ class E0V1E(IStrategy):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
         current_candle = dataframe.iloc[-1].squeeze()
 
-        if trade.open_rate > current_candle["ma120"]:
-            if trade.id not in TMP_HOLD120:
-                TMP_HOLD120.append(trade.id)
-
         if current_profit > 0:
             if current_candle["fastk"] > self.sell_fastx.value:
                 remove_pubid(trade.id)
@@ -104,8 +99,7 @@ class E0V1E(IStrategy):
                 remove_pubid(trade.id)
                 return "cci_loss_sell"
 
-        if trade.id in TMP_HOLD120 and current_candle["open"] < current_candle["ma120"]:
-            TMP_HOLD120.remove(trade.id)
+        if current_candle["open"] < current_candle["ma120"]:
             return "ma120_sell"
 
         return None
