@@ -91,12 +91,10 @@ class E0V1E(IStrategy):
 
         if current_profit > 0:
             if current_candle["fastk"] > self.sell_fastx.value:
-                remove_pubid(trade.id)
                 return "fastk_profit_sell"
 
         if current_profit > self.sell_loss_cci_profit.value:
             if current_candle["cci"] > self.sell_loss_cci.value:
-                remove_pubid(trade.id)
                 return "cci_loss_sell"
 
         if current_candle["open"] < current_candle["ma120"]:
