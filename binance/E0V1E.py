@@ -9,6 +9,8 @@ from functools import reduce
 import warnings
 
 warnings.simplefilter(action="ignore", category=RuntimeWarning)
+TMP_HOLD = []
+TMP_HOLD1 = []
 
 
 class E0V1E(IStrategy):
@@ -37,9 +39,9 @@ class E0V1E(IStrategy):
     trailing_only_offset_is_reached = True
 
     is_optimize_32 = True
-    buy_rsi_fast_32 = IntParameter(20, 70, default=30, space='buy', optimize=is_optimize_32)
-    buy_rsi_32 = IntParameter(15, 50, default=24, space='buy', optimize=is_optimize_32)
-    buy_sma15_32 = DecimalParameter(0.900, 1, default=0.96, decimals=3, space='buy', optimize=is_optimize_32)
+    buy_rsi_fast_32 = IntParameter(20, 70, default=40, space='buy', optimize=is_optimize_32)
+    buy_rsi_32 = IntParameter(15, 50, default=42, space='buy', optimize=is_optimize_32)
+    buy_sma15_32 = DecimalParameter(0.900, 1, default=0.973, decimals=3, space='buy', optimize=is_optimize_32)
     buy_cti_32 = DecimalParameter(-1, 1, default=0.69, decimals=2, space='buy', optimize=is_optimize_32)
 
     sell_fastx = IntParameter(50, 100, default=84, space='sell', optimize=True)
@@ -62,6 +64,7 @@ class E0V1E(IStrategy):
         dataframe['cci'] = ta.CCI(dataframe, timeperiod=20)
 
         dataframe['ma120'] = ta.MA(dataframe, timeperiod=120)
+        dataframe['ma240'] = ta.MA(dataframe, timeperiod=240)
 
         return dataframe
 
@@ -75,9 +78,10 @@ class E0V1E(IStrategy):
                 (dataframe['close'] < dataframe['sma_15'] * self.buy_sma15_32.value) &
                 (dataframe['cti'] < self.buy_cti_32.value)
         )
+        
         conditions.append(buy_1)
         dataframe.loc[buy_1, 'enter_tag'] += 'buy_1'
-        
+
         if conditions:
             dataframe.loc[
                 reduce(lambda x, y: x | y, conditions),
@@ -89,16 +93,53 @@ class E0V1E(IStrategy):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
         current_candle = dataframe.iloc[-1].squeeze()
 
+        min_profit = trade.calc_profit_ratio(trade.min_rate)
+
+        if current_candle['close'] > current_candle["ma120"] or current_candle['close'] > current_candle["ma240"]:
+            if trade.id not in TMP_HOLD:
+                TMP_HOLD.append(trade.id)
+        else:
+            if trade.id not in TMP_HOLD1:
+                TMP_HOLD1.append(trade.id)
+
         if current_profit > 0:
             if current_candle["fastk"] > self.sell_fastx.value:
                 return "fastk_profit_sell"
 
-        if current_profit > self.sell_loss_cci_profit.value:
-            if current_candle["cci"] > self.sell_loss_cci.value:
-                return "cci_loss_sell"
+        if min_profit > -0.06:
+            if current_profit > -0.02:
+                if current_candle["cci"] > self.sell_loss_cci.value:
+                    return "cci_loss_sell_2"
 
-        if current_candle["open"] < current_candle["ma120"]:
-            return "ma120_sell"
+        if -0.06 > min_profit > -0.1:
+            if current_profit > -0.05:
+                if current_candle["cci"] > self.sell_loss_cci.value:
+                    return "cci_loss_sell_5"
+
+        if min_profit <= -0.1:
+            if current_profit > self.sell_loss_cci_profit.value:
+                if current_candle["cci"] > self.sell_loss_cci.value:
+                    return "cci_loss_sell_10"
+
+        if trade.id in TMP_HOLD and current_candle["close"] < current_candle["ma120"] and current_candle["close"] < \
+                current_candle["ma240"]:
+            if current_time - timedelta(minutes=5) < trade.open_date_utc:
+                try:
+                    TMP_HOLD.remove(trade.id)
+                except:
+                    pass
+                if trade.id in TMP_HOLD1:
+                    pass
+                else:
+                    TMP_HOLD1.append(trade.id)
+            else:
+                return "ma120_sell"
+
+        if trade.id in TMP_HOLD1:
+            if current_candle["high"] > current_candle["ma120"] or current_candle["high"] > current_candle["ma240"]:
+                if current_time - timedelta(minutes=5) > trade.open_date_utc:
+                    TMP_HOLD1.remove(trade.id)
+                    return "cross_120_or_240_sell"
 
         return None
 
