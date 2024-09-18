@@ -48,7 +48,7 @@ class E0V1E(IStrategy):
 
     cci_opt = True
     sell_loss_cci = IntParameter(low=0, high=600, default=80, space='sell', optimize=cci_opt)
-    sell_loss_cci_profit = DecimalParameter(-0.15, 0, default=-0.1, decimals=2, space='sell', optimize=cci_opt)
+    sell_loss_cci_profit = DecimalParameter(-0.15, 0, default=-0.15, decimals=2, space='sell', optimize=cci_opt)
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # buy_1 indicators
@@ -79,8 +79,19 @@ class E0V1E(IStrategy):
                 (dataframe['cti'] < self.buy_cti_32.value)
         )
         
+        buy_new = (
+                (dataframe['rsi_slow'] < dataframe['rsi_slow'].shift(1)) &
+                (dataframe['rsi_fast'] < 34) &
+                (dataframe['rsi'] > 28) &
+                (dataframe['close'] < dataframe['sma_15'] * 0.96) &
+                (dataframe['cti'] < self.buy_cti_32.value)
+        )
+        
         conditions.append(buy_1)
         dataframe.loc[buy_1, 'enter_tag'] += 'buy_1'
+
+        conditions.append(buy_new)
+        dataframe.loc[buy_new, 'enter_tag'] += 'buy_new'
 
         if conditions:
             dataframe.loc[
@@ -106,33 +117,15 @@ class E0V1E(IStrategy):
             if current_candle["fastk"] > self.sell_fastx.value:
                 return "fastk_profit_sell"
 
-        if min_profit > -0.06:
-            if current_profit > -0.02:
-                if current_candle["cci"] > self.sell_loss_cci.value:
-                    return "cci_loss_sell_2"
-
-        if -0.06 > min_profit > -0.1:
-            if current_profit > -0.05:
-                if current_candle["cci"] > self.sell_loss_cci.value:
-                    return "cci_loss_sell_5"
-
         if min_profit <= -0.1:
             if current_profit > self.sell_loss_cci_profit.value:
                 if current_candle["cci"] > self.sell_loss_cci.value:
-                    return "cci_loss_sell_10"
+                    return "cci_loss_sell"
 
         if trade.id in TMP_HOLD and current_candle["close"] < current_candle["ma120"] and current_candle["close"] < \
                 current_candle["ma240"]:
-            if current_time - timedelta(minutes=5) < trade.open_date_utc:
-                try:
-                    TMP_HOLD.remove(trade.id)
-                except:
-                    pass
-                if trade.id in TMP_HOLD1:
-                    pass
-                else:
-                    TMP_HOLD1.append(trade.id)
-            else:
+            if min_profit <= -0.08:
+                TMP_HOLD.remove(trade.id)
                 return "ma120_sell"
 
         if trade.id in TMP_HOLD1:
