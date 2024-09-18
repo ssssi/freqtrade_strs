@@ -124,7 +124,7 @@ class E0V1E(IStrategy):
 
         if trade.id in TMP_HOLD and current_candle["close"] < current_candle["ma120"] and current_candle["close"] < \
                 current_candle["ma240"]:
-            if min_profit <= -0.08:
+            if min_profit <= -0.05:
                 TMP_HOLD.remove(trade.id)
                 return "ma120_sell"
 
