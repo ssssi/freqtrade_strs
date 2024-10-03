@@ -118,7 +118,7 @@ class E0V1E(IStrategy):
                 return "fastk_profit_sell"
 
         if current_candle["cci"] > 80:
-            if current_candle["high"] > trade.open_rate:
+            if current_candle["high"] >= trade.open_rate:
                 return "cci_high_sell"
 
         if min_profit <= -0.1:
