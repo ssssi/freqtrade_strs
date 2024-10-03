@@ -35,7 +35,7 @@ class E0V1E(IStrategy):
     stoploss = -0.25
     trailing_stop = True
     trailing_stop_positive = 0.003
-    trailing_stop_positive_offset = 0.03
+    trailing_stop_positive_offset = 0.01
     trailing_only_offset_is_reached = True
 
     is_optimize_32 = True
@@ -47,7 +47,7 @@ class E0V1E(IStrategy):
     sell_fastx = IntParameter(50, 100, default=84, space='sell', optimize=True)
 
     cci_opt = True
-    sell_loss_cci = IntParameter(low=0, high=600, default=80, space='sell', optimize=cci_opt)
+    sell_loss_cci = IntParameter(low=0, high=600, default=120, space='sell', optimize=cci_opt)
     sell_loss_cci_profit = DecimalParameter(-0.15, 0, default=-0.15, decimals=2, space='sell', optimize=cci_opt)
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -78,7 +78,7 @@ class E0V1E(IStrategy):
                 (dataframe['close'] < dataframe['sma_15'] * self.buy_sma15_32.value) &
                 (dataframe['cti'] < self.buy_cti_32.value)
         )
-        
+
         buy_new = (
                 (dataframe['rsi_slow'] < dataframe['rsi_slow'].shift(1)) &
                 (dataframe['rsi_fast'] < 34) &
@@ -86,7 +86,7 @@ class E0V1E(IStrategy):
                 (dataframe['close'] < dataframe['sma_15'] * 0.96) &
                 (dataframe['cti'] < self.buy_cti_32.value)
         )
-        
+
         conditions.append(buy_1)
         dataframe.loc[buy_1, 'enter_tag'] += 'buy_1'
 
@@ -117,6 +117,10 @@ class E0V1E(IStrategy):
             if current_candle["fastk"] > self.sell_fastx.value:
                 return "fastk_profit_sell"
 
+        if current_candle["cci"] > 80:
+            if current_candle["high"] > trade.open_rate:
+                return "cci_high_sell"
+
         if min_profit <= -0.1:
             if current_profit > self.sell_loss_cci_profit.value:
                 if current_candle["cci"] > self.sell_loss_cci.value:
@@ -124,13 +128,13 @@ class E0V1E(IStrategy):
 
         if trade.id in TMP_HOLD and current_candle["close"] < current_candle["ma120"] and current_candle["close"] < \
                 current_candle["ma240"]:
-            if min_profit <= -0.05:
+            if current_time - timedelta(minutes=10) > trade.open_date_utc:
                 TMP_HOLD.remove(trade.id)
                 return "ma120_sell"
 
         if trade.id in TMP_HOLD1:
             if current_candle["high"] > current_candle["ma120"] or current_candle["high"] > current_candle["ma240"]:
-                if current_time - timedelta(minutes=5) > trade.open_date_utc:
+                if min_profit <= -0.05:
                     TMP_HOLD1.remove(trade.id)
                     return "cross_120_or_240_sell"
 
