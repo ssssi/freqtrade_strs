@@ -13,7 +13,7 @@ TMP_HOLD = []
 TMP_HOLD1 = []
 
 
-class E0V1E1(IStrategy):
+class E0V1E(IStrategy):
     minimal_roi = {
         "0": 1
     }
