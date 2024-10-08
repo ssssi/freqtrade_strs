@@ -13,7 +13,7 @@ TMP_HOLD = []
 TMP_HOLD1 = []
 
 
-class E0V1E(IStrategy):
+class E0V1E1(IStrategy):
     minimal_roi = {
         "0": 1
     }
@@ -35,7 +35,7 @@ class E0V1E(IStrategy):
     stoploss = -0.25
     trailing_stop = True
     trailing_stop_positive = 0.003
-    trailing_stop_positive_offset = 0.01
+    trailing_stop_positive_offset = 0.03
     trailing_only_offset_is_reached = True
 
     is_optimize_32 = True
@@ -49,6 +49,16 @@ class E0V1E(IStrategy):
     cci_opt = True
     sell_loss_cci = IntParameter(low=0, high=600, default=120, space='sell', optimize=cci_opt)
     sell_loss_cci_profit = DecimalParameter(-0.15, 0, default=-0.15, decimals=2, space='sell', optimize=cci_opt)
+    
+    @property
+    def protections(self):
+        
+        return [
+        {
+            "method": "CooldownPeriod",
+            "stop_duration_candles": 36
+        }
+        ]
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # buy_1 indicators
@@ -120,21 +130,21 @@ class E0V1E(IStrategy):
         if current_candle["cci"] > 80:
             if current_candle["high"] >= trade.open_rate:
                 return "cci_high_sell"
-
-        if min_profit <= -0.1:
+            
+        if min_profit <= -0.15:
             if current_profit > self.sell_loss_cci_profit.value:
                 if current_candle["cci"] > self.sell_loss_cci.value:
                     return "cci_loss_sell"
 
         if trade.id in TMP_HOLD and current_candle["close"] < current_candle["ma120"] and current_candle["close"] < \
                 current_candle["ma240"]:
-            if current_time - timedelta(minutes=10) > trade.open_date_utc:
+            if current_time - timedelta(minutes=12) > trade.open_date_utc:
                 TMP_HOLD.remove(trade.id)
                 return "ma120_sell"
 
         if trade.id in TMP_HOLD1:
             if current_candle["high"] > current_candle["ma120"] or current_candle["high"] > current_candle["ma240"]:
-                if min_profit <= -0.05:
+                if -0.1<= min_profit <= -0.05:
                     TMP_HOLD1.remove(trade.id)
                     return "cross_120_or_240_sell"
 
