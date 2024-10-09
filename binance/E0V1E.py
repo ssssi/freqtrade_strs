@@ -56,7 +56,7 @@ class E0V1E(IStrategy):
         return [
         {
             "method": "CooldownPeriod",
-            "stop_duration_candles": 36
+            "stop_duration_candles": 18
         }
         ]
 
