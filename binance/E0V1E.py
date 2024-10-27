@@ -47,8 +47,8 @@ class E0V1E(IStrategy):
     sell_fastx = IntParameter(50, 100, default=84, space='sell', optimize=True)
 
     cci_opt = True
-    sell_loss_cci = IntParameter(low=0, high=600, default=120, space='sell', optimize=cci_opt)
-    sell_loss_cci_profit = DecimalParameter(-0.15, 0, default=-0.15, decimals=2, space='sell', optimize=cci_opt)
+    sell_loss_cci = IntParameter(low=0, high=600, default=100, space='sell', optimize=cci_opt)
+    sell_loss_cci_profit = DecimalParameter(-0.15, 0, default=-0.05, decimals=2, space='sell', optimize=cci_opt)
     
     @property
     def protections(self):
@@ -94,7 +94,15 @@ class E0V1E(IStrategy):
                 (dataframe['rsi_fast'] < 34) &
                 (dataframe['rsi'] > 28) &
                 (dataframe['close'] < dataframe['sma_15'] * 0.96) &
-                (dataframe['cti'] < self.buy_cti_32.value)
+                (dataframe['cti'] < self.buy_cti_32.value) &
+                (
+                (dataframe['ma120'] < dataframe['low']) |
+                (dataframe['ma120'] > dataframe['high'])
+                ) &
+                (
+                (dataframe['ma240'] < dataframe['low']) |
+                (dataframe['ma240'] > dataframe['high'])
+                )
         )
 
         conditions.append(buy_1)
@@ -131,14 +139,20 @@ class E0V1E(IStrategy):
             if current_candle["high"] >= trade.open_rate:
                 return "cci_high_sell"
             
+        if min_profit <= -0.08:
+            if "buy_new" in str(trade.enter_tag):
+                if current_profit > self.sell_loss_cci_profit.value:
+                    if current_candle["cci"] > self.sell_loss_cci.value:
+                        return "cci_loss_sell"
+                        
         if min_profit <= -0.15:
-            if current_profit > self.sell_loss_cci_profit.value:
-                if current_candle["cci"] > self.sell_loss_cci.value:
-                    return "cci_loss_sell"
+            if str(trade.enter_tag) == "buy_1":
+                if current_profit > -0.15:
+                    if current_candle["cci"] > 120:
+                        return "cci_loss_sell"
 
         if trade.id in TMP_HOLD and current_candle["close"] < current_candle["ma120"] and current_candle["close"] < \
                 current_candle["ma240"]:
-            if current_time - timedelta(minutes=12) > trade.open_date_utc:
                 TMP_HOLD.remove(trade.id)
                 return "ma120_sell"
 
