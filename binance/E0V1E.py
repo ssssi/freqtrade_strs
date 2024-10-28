@@ -47,7 +47,7 @@ class E0V1E(IStrategy):
     sell_fastx = IntParameter(50, 100, default=84, space='sell', optimize=True)
 
     cci_opt = True
-    sell_loss_cci = IntParameter(low=0, high=600, default=100, space='sell', optimize=cci_opt)
+    sell_loss_cci = IntParameter(low=0, high=600, default=80, space='sell', optimize=cci_opt)
     sell_loss_cci_profit = DecimalParameter(-0.15, 0, default=-0.05, decimals=2, space='sell', optimize=cci_opt)
     
     @property
@@ -139,7 +139,7 @@ class E0V1E(IStrategy):
             if current_candle["high"] >= trade.open_rate:
                 return "cci_high_sell"
             
-        if min_profit <= -0.08:
+        if trade.id in TMP_HOLD and (trade.min_rate < current_candle["ma120"] or trade.min_rate < current_candle["ma240"]):
             if "buy_new" in str(trade.enter_tag):
                 if current_profit > self.sell_loss_cci_profit.value:
                     if current_candle["cci"] > self.sell_loss_cci.value:
