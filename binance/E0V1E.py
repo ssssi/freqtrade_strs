@@ -122,8 +122,6 @@ class E0V1E1(IStrategy):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
         current_candle = dataframe.iloc[-1].squeeze()
 
-        min_profit = trade.calc_profit_ratio(trade.min_rate)
-
         if current_candle['close'] > current_candle["ma120"] or current_candle['close'] > current_candle["ma240"]:
             if trade.id not in TMP_HOLD:
                 TMP_HOLD.append(trade.id)
