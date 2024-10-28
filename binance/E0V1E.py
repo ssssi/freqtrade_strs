@@ -34,7 +34,7 @@ class E0V1E1(IStrategy):
 
     stoploss = -0.25
     trailing_stop = True
-    trailing_stop_positive = 0.005
+    trailing_stop_positive = 0.002
     trailing_stop_positive_offset = 0.05
     trailing_only_offset_is_reached = True
 
@@ -134,7 +134,6 @@ class E0V1E1(IStrategy):
         if current_profit > 0:
             if current_candle["fastk"] > self.sell_fastx.value:
                 return "fastk_profit_sell"
-
 
         if trade.id in TMP_HOLD and (trade.min_rate < current_candle["ma120"] or trade.min_rate < current_candle["ma240"]):
             if "buy_new" in str(trade.enter_tag):
