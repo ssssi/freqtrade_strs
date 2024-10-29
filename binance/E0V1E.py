@@ -11,9 +11,10 @@ import warnings
 warnings.simplefilter(action="ignore", category=RuntimeWarning)
 TMP_HOLD = []
 TMP_HOLD1 = []
+TMP_HOLD2 = []
 
 
-class E0V1E1(IStrategy):
+class E0V1E(IStrategy):
     minimal_roi = {
         "0": 1
     }
@@ -68,7 +69,7 @@ class E0V1E1(IStrategy):
         if current_profit >= 0.05:
             return -0.002
             
-        if str(trade.enter_tage) == "buy_new" and current_profit >= 0.03:
+        if str(trade.enter_tag) == "buy_new" and current_profit >= 0.03:
             return -0.003
 
         return None
@@ -133,14 +134,18 @@ class E0V1E1(IStrategy):
                     current_profit: float, **kwargs):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
         current_candle = dataframe.iloc[-1].squeeze()
+        
+        min_profit = trade.calc_profit_ratio(trade.min_rate)
 
         if current_candle['close'] > current_candle["ma120"]:
             if trade.id not in TMP_HOLD:
                 TMP_HOLD.append(trade.id)
                 
-        if current_candle['close'] > current_candle["ma240"]:
+        elif current_candle['close'] > current_candle["ma240"]:
             if trade.id not in TMP_HOLD1:
                 TMP_HOLD1.append(trade.id)
+        else:
+            TMP_HOLD2.append(trade.id)
 
         if current_profit > 0:
             if current_candle["fastk"] > self.sell_fastx.value:
@@ -159,6 +164,12 @@ class E0V1E1(IStrategy):
                     if current_candle["cci"] > self.sell_loss_cci.value:
                         TMP_HOLD1.remove(trade.id)
                         return "cci_loss_sell_240"
+        
+        if trade.id in TMP_HOLD2:
+            if min_profit <= -0.15:
+                if current_profit > -0.15:
+                    if current_candle["cci"] > 120:
+                        return "cci_loss_sell_15"
 
         if trade.id in TMP_HOLD and current_candle["close"] < current_candle["ma120"] and current_candle["close"] < \
                 current_candle["ma240"]:
