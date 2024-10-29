@@ -122,10 +122,11 @@ class E0V1E1(IStrategy):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
         current_candle = dataframe.iloc[-1].squeeze()
 
-        if current_candle['close'] > current_candle["ma120"] or current_candle['close'] > current_candle["ma240"]:
+        if current_candle['close'] > current_candle["ma120"]:
             if trade.id not in TMP_HOLD:
                 TMP_HOLD.append(trade.id)
-        else:
+                
+        if current_candle['close'] > current_candle["ma240"]:
             if trade.id not in TMP_HOLD1:
                 TMP_HOLD1.append(trade.id)
 
@@ -133,11 +134,21 @@ class E0V1E1(IStrategy):
             if current_candle["fastk"] > self.sell_fastx.value:
                 return "fastk_profit_sell"
 
-        if trade.id in TMP_HOLD and (trade.min_rate < current_candle["ma120"] or trade.min_rate < current_candle["ma240"]):
+        if current_profit >= 0.03:
+            if str(trade.enter_tage) == "buy_new":
+                return "buy_new_sell_fast"  # buy use custom stoploss
+
+        if trade.id in TMP_HOLD and trade.min_rate < current_candle["ma120"]:
             if "buy_new" in str(trade.enter_tag):
                 if current_profit > self.sell_loss_cci_profit.value:
                     if current_candle["cci"] > self.sell_loss_cci.value:
-                        return "cci_loss_sell"
+                        return "cci_loss_sell_120"
+                        
+        if trade.id in TMP_HOLD1 and trade.min_rate < current_candle["ma240"]:
+            if "buy_new" in str(trade.enter_tag):
+                if current_profit > self.sell_loss_cci_profit.value:
+                    if current_candle["cci"] > self.sell_loss_cci.value:
+                        return "cci_loss_sell_240"
 
         if trade.id in TMP_HOLD and current_candle["close"] < current_candle["ma120"] and current_candle["close"] < \
                 current_candle["ma240"]:
