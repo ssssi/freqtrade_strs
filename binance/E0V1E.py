@@ -51,7 +51,7 @@ class E0V1E(IStrategy):
 
     cci_opt = True
     sell_loss_cci = IntParameter(low=0, high=600, default=80, space='sell', optimize=cci_opt)
-    sell_loss_cci_profit = DecimalParameter(-0.15, 0, default=-0.1, decimals=2, space='sell', optimize=cci_opt)
+    sell_loss_cci_profit = DecimalParameter(-0.15, 0, default=-0.05, decimals=2, space='sell', optimize=cci_opt)
 
     @property
     def protections(self):
