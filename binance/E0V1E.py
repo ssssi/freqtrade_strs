@@ -33,10 +33,12 @@ class E0V1E1(IStrategy):
     }
 
     stoploss = -0.25
-    trailing_stop = True
+    trailing_stop = False
     trailing_stop_positive = 0.002
     trailing_stop_positive_offset = 0.05
     trailing_only_offset_is_reached = True
+
+    use_custom_stoploss = True
 
     is_optimize_32 = True
     buy_rsi_fast_32 = IntParameter(20, 70, default=40, space='buy', optimize=is_optimize_32)
@@ -59,7 +61,17 @@ class E0V1E1(IStrategy):
                 "stop_duration_candles": 18
             }
         ]
+        
+    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
+                        current_rate: float, current_profit: float, **kwargs) -> float:
 
+        if current_profit >= 0.05:
+            return -0.002
+            
+        if str(trade.enter_tage) == "buy_new" and current_profit >= 0.03:
+            return -0.003
+
+        return None
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # buy_1 indicators
         dataframe['sma_15'] = ta.SMA(dataframe, timeperiod=15)
@@ -134,20 +146,18 @@ class E0V1E1(IStrategy):
             if current_candle["fastk"] > self.sell_fastx.value:
                 return "fastk_profit_sell"
 
-        if current_profit >= 0.03:
-            if str(trade.enter_tage) == "buy_new":
-                return "buy_new_sell_fast"  # buy use custom stoploss
-
         if trade.id in TMP_HOLD and trade.min_rate < current_candle["ma120"]:
             if "buy_new" in str(trade.enter_tag):
                 if current_profit > self.sell_loss_cci_profit.value:
                     if current_candle["cci"] > self.sell_loss_cci.value:
+                        TMP_HOLD.remove(trade.id)
                         return "cci_loss_sell_120"
                         
         if trade.id in TMP_HOLD1 and trade.min_rate < current_candle["ma240"]:
             if "buy_new" in str(trade.enter_tag):
                 if current_profit > self.sell_loss_cci_profit.value:
                     if current_candle["cci"] > self.sell_loss_cci.value:
+                        TMP_HOLD1.remove(trade.id)
                         return "cci_loss_sell_240"
 
         if trade.id in TMP_HOLD and current_candle["close"] < current_candle["ma120"] and current_candle["close"] < \
