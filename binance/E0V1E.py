@@ -109,11 +109,11 @@ class E0V1E(IStrategy):
                 (dataframe['close'] < dataframe['sma_15'] * 0.96) &
                 (dataframe['cti'] < self.buy_cti_32.value) &
                 (
-                        (dataframe['ma120'] < dataframe['low']) |
+                        (dataframe['ma120'] * 1.001 < dataframe['low']) |
                         (dataframe['ma120'] > dataframe['high'])
                 ) &
                 (
-                        (dataframe['ma240'] < dataframe['low']) |
+                        (dataframe['ma240'] * 1.001 < dataframe['low']) |
                         (dataframe['ma240'] > dataframe['high'])
                 )
         )
