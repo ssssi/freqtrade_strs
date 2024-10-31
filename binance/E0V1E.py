@@ -81,9 +81,10 @@ class E0V1E(IStrategy):
         dataframe['rsi_fast'] = ta.RSI(dataframe, timeperiod=4)
         dataframe['rsi_slow'] = ta.RSI(dataframe, timeperiod=20)
         # profit sell indicators
-        stoch_fast = ta.STOCHF(dataframe, 5, 3, 0, 3, 0)
-        dataframe['fastk'] = stoch_fast['fastk']
-
+        # fastk_period=5, slowk_period=3, slowk_matype=0, slowd_period=3, slowd_matype=0
+        stoch_slow = ta.STOCH(dataframe, fastk_period=5, slowk_period=3, slowd_period=3)
+        dataframe['stoch-slowk'] = stoch_slow['slowk']
+        
         dataframe['cci'] = ta.CCI(dataframe, timeperiod=20)
 
         dataframe['ma120'] = ta.MA(dataframe, timeperiod=120)
@@ -148,7 +149,7 @@ class E0V1E(IStrategy):
             TMP_HOLD2.append(trade.id)
 
         if current_profit > 0:
-            if current_candle["fastk"] > self.sell_fastx.value:
+            if current_candle["stoch-slowk"] > self.sell_fastx.value:
                 return "fastk_profit_sell"
 
         if trade.id in TMP_HOLD and trade.min_rate < current_candle["ma120"]:
