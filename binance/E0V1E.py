@@ -11,7 +11,6 @@ import warnings
 warnings.simplefilter(action="ignore", category=RuntimeWarning)
 TMP_HOLD = []
 TMP_HOLD1 = []
-TMP_HOLD2 = []
 
 
 class E0V1E(IStrategy):
@@ -45,12 +44,12 @@ class E0V1E(IStrategy):
     buy_rsi_fast_32 = IntParameter(20, 70, default=40, space='buy', optimize=is_optimize_32)
     buy_rsi_32 = IntParameter(15, 50, default=42, space='buy', optimize=is_optimize_32)
     buy_sma15_32 = DecimalParameter(0.900, 1, default=0.973, decimals=3, space='buy', optimize=is_optimize_32)
-    buy_cti_32 = DecimalParameter(-1, 1, default=0.69, decimals=2, space='buy', optimize=is_optimize_32)
+    buy_cti_32 = DecimalParameter(-1, 1, default=-0.69, decimals=2, space='buy', optimize=is_optimize_32)
 
     sell_fastx = IntParameter(50, 100, default=84, space='sell', optimize=True)
 
-    cci_opt = True
-    sell_loss_cci = IntParameter(low=0, high=600, default=80, space='sell', optimize=cci_opt)
+    cci_opt = False
+    sell_loss_cci = IntParameter(low=0, high=600, default=120, space='sell', optimize=cci_opt)
     sell_loss_cci_profit = DecimalParameter(-0.15, 0, default=-0.05, decimals=2, space='sell', optimize=cci_opt)
 
     @property
@@ -80,10 +79,11 @@ class E0V1E(IStrategy):
         dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)
         dataframe['rsi_fast'] = ta.RSI(dataframe, timeperiod=4)
         dataframe['rsi_slow'] = ta.RSI(dataframe, timeperiod=20)
+
         # profit sell indicators
         stoch_fast = ta.STOCHF(dataframe, 5, 3, 0, 3, 0)
         dataframe['fastk'] = stoch_fast['fastk']
-        
+
         dataframe['cci'] = ta.CCI(dataframe, timeperiod=20)
 
         dataframe['ma120'] = ta.MA(dataframe, timeperiod=120)
@@ -107,16 +107,9 @@ class E0V1E(IStrategy):
                 (dataframe['rsi_fast'] < 34) &
                 (dataframe['rsi'] > 28) &
                 (dataframe['close'] < dataframe['sma_15'] * 0.96) &
-                (dataframe['cti'] < self.buy_cti_32.value) &
-                (
-                        (dataframe['ma120'] * 1.001 < dataframe['low']) |
-                        (dataframe['ma120'] > dataframe['high'])
-                ) &
-                (
-                        (dataframe['ma240'] * 1.001 < dataframe['low']) |
-                        (dataframe['ma240'] > dataframe['high'])
-                )
+                (dataframe['cti'] < self.buy_cti_32.value)
         )
+
 
         conditions.append(buy_1)
         dataframe.loc[buy_1, 'enter_tag'] += 'buy_1'
@@ -136,45 +129,33 @@ class E0V1E(IStrategy):
         current_candle = dataframe.iloc[-1].squeeze()
         
         min_profit = trade.calc_profit_ratio(trade.min_rate)
-
-        if current_candle['close'] > current_candle["ma120"]:
+        
+        if current_candle['close'] > current_candle["ma120"] and current_candle['close'] > current_candle["ma240"]:
             if trade.id not in TMP_HOLD:
                 TMP_HOLD.append(trade.id)
-                
-        elif current_candle['close'] > current_candle["ma240"]:
+        
+        if (trade.open_rate - current_candle["ma120"]) / trade.open_rate >= 0.1:
             if trade.id not in TMP_HOLD1:
                 TMP_HOLD1.append(trade.id)
-        else:
-            TMP_HOLD2.append(trade.id)
-
+        
         if current_profit > 0:
             if current_candle["fastk"] > self.sell_fastx.value:
                 return "fastk_profit_sell"
-
-        if trade.id in TMP_HOLD and trade.min_rate < current_candle["ma120"]:
-            if "buy_new" in str(trade.enter_tag):
-                if current_profit > self.sell_loss_cci_profit.value:
-                    if current_candle["cci"] > self.sell_loss_cci.value:
-                        TMP_HOLD.remove(trade.id)
-                        return "cci_loss_sell_120"
-                        
-        if trade.id in TMP_HOLD1 and trade.min_rate < current_candle["ma240"]:
-            if "buy_new" in str(trade.enter_tag):
-                if current_profit > self.sell_loss_cci_profit.value:
-                    if current_candle["cci"] > self.sell_loss_cci.value:
-                        TMP_HOLD1.remove(trade.id)
-                        return "cci_loss_sell_240"
         
-        if trade.id in TMP_HOLD2:
-            if min_profit <= -0.15:
-                if current_profit > -0.15:
-                    if current_candle["cci"] > 120:
-                        return "cci_loss_sell_15"
+        if min_profit <= -0.1:
+            if current_profit > self.sell_loss_cci_profit.value:
+                if current_candle["cci"] > self.sell_loss_cci.value:
+                    return "cci_loss_sell"
+
+        if trade.id in TMP_HOLD1 and current_candle["close"] < current_candle["ma120"]:
+            TMP_HOLD1.remove(trade.id)
+            return "ma120_sell_fast"
 
         if trade.id in TMP_HOLD and current_candle["close"] < current_candle["ma120"] and current_candle["close"] < \
                 current_candle["ma240"]:
-            TMP_HOLD.remove(trade.id)
-            return "ma120_sell"
+            if min_profit <= -0.1:
+                TMP_HOLD.remove(trade.id)
+                return "ma120_sell"
 
         return None
 
