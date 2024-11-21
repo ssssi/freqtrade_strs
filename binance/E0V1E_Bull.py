@@ -10,6 +10,7 @@ import warnings
 
 warnings.simplefilter(action="ignore", category=RuntimeWarning)
 
+## Bull version, No stoploss, Just do it
 
 class E0V1E_Bull(IStrategy):
     minimal_roi = {
