@@ -2,6 +2,8 @@
 ## some strategies.
 
 ## Don't try to create a complex strategy. Simple is often the most effective.
+
+# This strategy is a very simple strategy, you can expand it freely, I believe you can do better.
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ## How do i hyper my str(current use is E0V1E.py).
 
