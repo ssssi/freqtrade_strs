@@ -16,6 +16,10 @@ Comment this line："PermitRootLogin prohibit-password"
 
 Add a new line: PermitRootLogin yes 
 
+docker-compose run --rm freqtrade create-userdir --userdir user_data
+
+systemctl enable ssh.service
+
 service sshd restart
 
 ## 3.Install bot environment(docker)
@@ -37,3 +41,6 @@ docker-compose pull
 
 ### Create user directory structure
 docker-compose run --rm freqtrade create-userdir --userdir user_data
+
+### Create user directory structure
+docker-compose run up -d
