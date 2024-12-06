@@ -147,7 +147,7 @@ class E0V1E_Bull(IStrategy):
         
         if current_time - timedelta(hours=10) > trade.open_date_utc:
             if current_profit > -0.07:
-                return "time_loss_sell_6_7"
+                return "time_loss_sell_10_7"
 
         return None
 
