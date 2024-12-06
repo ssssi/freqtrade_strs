@@ -128,7 +128,7 @@ class E0V1E_Bull(IStrategy):
                 if current_candle["cci"] > self.sell_loss_cci.value:
                     return "cci_loss_sell"
                     
-        if current_profit > >= -0.03:
+        if current_profit >= -0.03:
             if current_candle["cci"] > 80:
                 return "cci_loss_sell_fast"
         
