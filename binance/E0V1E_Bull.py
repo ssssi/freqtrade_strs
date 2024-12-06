@@ -48,7 +48,7 @@ class E0V1E_Bull(IStrategy):
     sell_fastx = IntParameter(50, 100, default=84, space='sell', optimize=True)
 
     cci_opt = False
-    sell_loss_cci = IntParameter(low=0, high=600, default=100, space='sell', optimize=cci_opt)
+    sell_loss_cci = IntParameter(low=0, high=600, default=120, space='sell', optimize=cci_opt)
     sell_loss_cci_profit = DecimalParameter(-0.15, 0, default=-0.05, decimals=2, space='sell', optimize=cci_opt)
 
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
@@ -123,10 +123,14 @@ class E0V1E_Bull(IStrategy):
             if current_candle["fastk"] > self.sell_fastx.value:
                 return "fastk_profit_sell"
         
-        if min_profit <= -0.1 or current_profit >= -0.03:
+        if min_profit <= -0.15:
             if current_profit > self.sell_loss_cci_profit.value:
                 if current_candle["cci"] > self.sell_loss_cci.value:
                     return "cci_loss_sell"
+                    
+        if current_profit > >= -0.03:
+            if current_candle["cci"] > 80:
+                return "cci_loss_sell_fast"
         
         if current_time - timedelta(hours=4) > trade.open_date_utc:
             if current_profit > -0.03:
