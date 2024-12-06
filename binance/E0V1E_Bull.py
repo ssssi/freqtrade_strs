@@ -10,8 +10,6 @@ import warnings
 
 warnings.simplefilter(action="ignore", category=RuntimeWarning)
 
-## Bull version, No stoploss, Just do it
-
 class E0V1E_Bull(IStrategy):
     minimal_roi = {
         "0": 1
@@ -31,7 +29,7 @@ class E0V1E_Bull(IStrategy):
         'stoploss_on_exchange_market_ratio': 0.99
     }
 
-    stoploss = -0.99
+    stoploss = -0.30
     trailing_stop = False
     trailing_stop_positive = 0.002
     trailing_stop_positive_offset = 0.05
@@ -50,6 +48,17 @@ class E0V1E_Bull(IStrategy):
     cci_opt = False
     sell_loss_cci = IntParameter(low=0, high=600, default=120, space='sell', optimize=cci_opt)
     sell_loss_cci_profit = DecimalParameter(-0.15, 0, default=-0.05, decimals=2, space='sell', optimize=cci_opt)
+
+    
+    @property
+    def protections(self):
+
+        return [
+            {
+                "method": "CooldownPeriod",
+                "stop_duration_candles": 24
+            }
+        ]
 
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
                         current_rate: float, current_profit: float, **kwargs) -> float:
@@ -136,7 +145,7 @@ class E0V1E_Bull(IStrategy):
             if current_profit > -0.03:
                 return "time_loss_sell_4_3"
         
-        if current_time - timedelta(hours=6) > trade.open_date_utc:
+        if current_time - timedelta(hours=10) > trade.open_date_utc:
             if current_profit > -0.07:
                 return "time_loss_sell_6_7"
 
