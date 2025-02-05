@@ -44,11 +44,11 @@ class CooldownPeriod(IProtection):
             if trade.exit_reason == "stop_loss":
                 self.log_once(f"Cooldown for {pair} {self.unlock_reason_time_element}.", logger.info)
                 until = self.calculate_lock_end([trade])
-  
+
                 return ProtectionReturn(
-                  lock=True,
-                  until=until,
-                  reason=self._reason(),
+                    lock=True,
+                    until=until,
+                    reason=self._reason(),
                 )
             else:
                 return None
