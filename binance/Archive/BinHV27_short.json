@@ -1,0 +1,41 @@
+{
+  "strategy_name": "BinHV27_short",
+  "params": {
+    "roi": {
+      "0": 100
+    },
+    "stoploss": {
+      "stoploss": -0.1
+    },
+    "trailing": {
+      "trailing_stop": false,
+      "trailing_stop_positive": null,
+      "trailing_stop_positive_offset": 0.0,
+      "trailing_only_offset_is_reached": false
+    },
+    "buy": {
+		"buy_adx1": 39,
+		"buy_adx2": 38,
+		"buy_adx3": 51,
+		"buy_adx4": 49,
+		"buy_emarsi1": 23,
+		"buy_emarsi2": 69,
+		"buy_emarsi3": 70,
+		"buy_emarsi4": 95,
+		"leverage_num": 6
+    },
+    "sell": {
+		"csell_endtrend_respect_roi": true,
+		"csell_pullback": false,
+		"csell_pullback_amount": 0.114,
+		"csell_pullback_respect_roi": true,
+		"csell_roi_end": 0.0,
+		"csell_roi_start": 0.055,
+		"csell_roi_time": 1288,
+		"csell_roi_type": "decay",
+		"csell_trend_type": "none"
+    }
+  },
+  "ft_stratparam_v": 1,
+  "export_time": "2022-07-01 03:25:20.577385+00:00"
+}
