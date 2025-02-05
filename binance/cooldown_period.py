@@ -5,7 +5,6 @@ from freqtrade.constants import LongShort
 from freqtrade.persistence import Trade
 from freqtrade.plugins.protections import IProtection, ProtectionReturn
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -66,7 +65,7 @@ class CooldownPeriod(IProtection):
         return None
 
     def stop_per_pair(
-        self, pair: str, date_now: datetime, side: LongShort
+            self, pair: str, date_now: datetime, side: LongShort
     ) -> ProtectionReturn | None:
         """
         Stops trading (position entering) for this pair
