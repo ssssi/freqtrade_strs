@@ -31,12 +31,12 @@ class E0V1E(IStrategy):
     }
 
     stoploss = -0.25
-    trailing_stop = False
+    trailing_stop = True
     trailing_stop_positive = 0.002
     trailing_stop_positive_offset = 0.05
     trailing_only_offset_is_reached = True
 
-    use_custom_stoploss = True
+    use_custom_stoploss = False
 
     is_optimize_32 = True
     buy_rsi_fast_32 = IntParameter(20, 70, default=40, space='buy', optimize=is_optimize_32)
@@ -50,13 +50,6 @@ class E0V1E(IStrategy):
     sell_loss_cci = IntParameter(low=0, high=600, default=140, space='sell', optimize=cci_opt)
     sell_loss_cci_profit = DecimalParameter(-0.15, 0, default=-0.05, decimals=2, space='sell', optimize=cci_opt)
 
-    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
-                        current_rate: float, current_profit: float, **kwargs) -> float:
-
-        if current_profit >= 0.05:
-            return -0.002
-
-        return None
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # buy_1 indicators
         dataframe['sma_15'] = ta.SMA(dataframe, timeperiod=15)
