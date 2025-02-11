@@ -64,10 +64,10 @@ class E0V1E(IStrategy):
                         current_rate: float, current_profit: float, **kwargs) -> float:
 
         if current_profit >= 0.05:
-            return -0.002
-            
-        if str(trade.enter_tag) == "buy_new" and current_profit >= 0.03:
             return -0.003
+            
+        if "buy_new" in str(trade.enter_tag) and current_profit >= 0.03:
+            return -0.002
 
         return None
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -132,14 +132,13 @@ class E0V1E(IStrategy):
             if current_candle["fastk"] > self.sell_fastx.value:
                 return "fastk_profit_sell"
         
-        if min_profit <= -0.15:
-            if current_profit > self.sell_loss_cci_profit.value:
-                if current_candle["cci"] > self.sell_loss_cci.value:
-                    return "cci_loss_sell"
-
-        if current_profit >= -0.03:
+        if current_profit > -0.03:
             if current_candle["cci"] > 80:
-                return "cci_loss_sell_1"
+                return "cci_loss_sell"
+
+        if current_time - timedelta(hours=7) > trade.open_date_utc:
+            if current_profit >= -0.05:
+                return "time_loss_sell_7_5"
 
         if current_time - timedelta(hours=10) > trade.open_date_utc:
             if current_profit >= -0.1:
