@@ -45,7 +45,7 @@
     "pair_whitelist": [],
         "pair_blacklist": [
         "(BTCUSDT_.*|ETHUSDT_.*)",
-        "(GT|HT|BTC|ETH|BNB|LTC|MOB|PNT|DERP|GAL|DOCK|POLS|BAND|MDX|FLM|ARDR|ORN|JST|HMSTR|BEL|XTZ|REN|GFT|IRIS|OAX|KEY|EOS)/.*",
+        "(GT|HT|BTC|ETH|BNB|LTC|MOB|PNT|DERP|GAL|DOCK|POLS|BAND|MDX|FLM|ARDR|ORN|JST|HMSTR|BEL|XTZ|REN|GFT|IRIS|OAX|KEY|EOS|DAR|XVG|SAND|IDEX|SCR|PIVX|AIXBT)/.*",
         "(WBTC|BSV|BTCDOM|DEFI)/.*",
         "(AUD|BRZ|CAD|CHF|EUR|GBP|HKD|IDRT|JPY|NGN|RUB|SGD|TRY|UAH|USD|ZAR|UST)/.*",
         "(BUSD|CUSDT|DAI|PAX|PAXG|SUSD|TUSD|USDC|USDT|VAI|USDN|USDP|FDUSD|EURI)/.*"
@@ -55,9 +55,15 @@
         {
         "method": "VolumePairList",
         "number_assets": 110,
-        "sort_key": "quoteVolume",
-	"refresh_period": 3600
+        "sort_key": "quoteVolume"
     },
+    {
+       "method": "PercentChangePairList",
+       "number_assets": 110,
+	"min_value": -15,
+	"max_value": 150
+     },
+    {"method":"AgeFilter","min_days_listed":1},
     {"method": "ShuffleFilter", "seed": 42},
     {"method": "FullTradesFilter"}
     ],
@@ -93,7 +99,8 @@
       [
 	"/logs",
         "/stats",
-        "/count"
+        "/count",
+	"/reload_config"
       ]
     ],
  "notification_settings": {
