@@ -46,10 +46,6 @@ class E0V1E(IStrategy):
 
     sell_fastx = IntParameter(50, 100, default=84, space='sell', optimize=True)
 
-    cci_opt = False
-    sell_loss_cci = IntParameter(low=0, high=600, default=120, space='sell', optimize=cci_opt)
-    sell_loss_cci_profit = DecimalParameter(-0.15, 0, default=-0.05, decimals=2, space='sell', optimize=cci_opt)
-
     @property
     def protections(self):
 
@@ -81,12 +77,8 @@ class E0V1E(IStrategy):
         # profit sell indicators
         stoch_fast = ta.STOCHF(dataframe, 5, 3, 0, 3, 0)
         dataframe['fastk'] = stoch_fast['fastk']
-
         dataframe['cci'] = ta.CCI(dataframe, timeperiod=20)
-
-        dataframe['ma120'] = ta.MA(dataframe, timeperiod=120)
-        dataframe['ma240'] = ta.MA(dataframe, timeperiod=240)
-
+        
         return dataframe
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
@@ -125,8 +117,6 @@ class E0V1E(IStrategy):
                     current_profit: float, **kwargs):
         dataframe, _ = self.dp.get_analyzed_dataframe(pair=pair, timeframe=self.timeframe)
         current_candle = dataframe.iloc[-1].squeeze()
-        
-        min_profit = trade.calc_profit_ratio(trade.min_rate)
         
         if current_profit > 0:
             if current_candle["fastk"] > self.sell_fastx.value:
