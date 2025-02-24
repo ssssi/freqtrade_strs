@@ -22,6 +22,7 @@ Freqtrade official discord:
 https://discord.gg/e8dkbJsKf5
 
 Chinese discord:
+
 https://discord.com/invite/dKGXdCtK
 
 Chinese friends can join this channel to discuss together, I am also in it
