@@ -28,5 +28,17 @@ https://discord.com/invite/f7pdhdsr4d
 
 Chinese friends can join this channel to discuss together, I am also in it
 
+# Donations
+
+If you find this repository useful and want to support me, you can donate to the following addresses:
+
+- TRC20(USDT): `TFcnV2Wek5Ar3Vja8en18M3f8rg5A2qZx7`
+- BEP20(BNB): `0x6e80a040d45a718f436ac0fdcbb2d28be87a65ec`
+- Bitcoin(BTC): `1PW7RgvWg4s1SQHVUcBg1mtwm8KTFXD5DL`
+
+# Referral links
+
+- [Binance](https://accounts.marketwebb.blue/register?ref=77199030)
+
 if you have any question you can contact me in discord:@E0V1E or @evilzzq
 
