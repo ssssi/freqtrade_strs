@@ -28,7 +28,7 @@ https://discord.com/invite/f7pdhdsr4d
 
 Chinese friends can join this channel to discuss together, I am also in it
 
-# Donations
+## Donations
 
 If you find this repository useful and want to support me, you can donate to the following addresses:
 
@@ -36,7 +36,7 @@ If you find this repository useful and want to support me, you can donate to the
 - BEP20(BNB): `0x6e80a040d45a718f436ac0fdcbb2d28be87a65ec`
 - Bitcoin(BTC): `1PW7RgvWg4s1SQHVUcBg1mtwm8KTFXD5DL`
 
-# Referral links
+## Referral links
 
 - [Binance](https://accounts.marketwebb.blue/register?ref=77199030)
 
