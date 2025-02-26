@@ -24,7 +24,7 @@ https://discord.gg/e8dkbJsKf5
 
 Chinese discord:
 
-https://discord.gg/3bcgqDgS
+https://discord.com/invite/f7pdhdsr4d
 
 Chinese friends can join this channel to discuss together, I am also in it
 
