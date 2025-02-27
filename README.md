@@ -36,6 +36,8 @@ cn:https://www.binance.com/zh-CN/copy-trading/lead-details/4405826208723354624?t
 
 Spot Copy search:E0V1E(现货跟单搜索:E0V1E)
 
+Start Time: 2025/02/26
+
 ## Donations
 
 If you find this repository useful and want to support me, you can donate to the following addresses:
