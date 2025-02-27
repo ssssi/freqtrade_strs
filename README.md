@@ -7,6 +7,7 @@
 ## How do i hyper my str(current use is E0V1E.py).
 
 SortinoHyperOptLossDaily for buy signal
+
 SortinoHyperOptLoss for sell signal
 
 ## current dry run in this folder:binance/dry_run/buy1_and_buynew/
