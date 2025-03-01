@@ -30,9 +30,9 @@ Chinese friends can join this channel to discuss together
 
 ## Spot Copy(现货跟单交易)
 
-en:https://www.binance.com/en/copy-trading/lead-details/4405826208723354624?timeRange=7D
+en:https://www.binance.com/en/copy-trading/lead-details/4405826208723354624
 
-cn:https://www.binance.com/zh-CN/copy-trading/lead-details/4405826208723354624?timeRange=7D
+cn:https://www.binance.com/zh-CN/copy-trading/lead-details/4405826208723354624
 
 Spot Copy search:E0V1E(现货跟单搜索:E0V1E)
 
