@@ -10,7 +10,7 @@ SortinoHyperOptLossDaily for buy signal
 
 SortinoHyperOptLoss for sell signal
 
-## current dry run in this folder:binance/dry_run/buy1_and_buynew/
+## current dry run in this folder:binance/dry_run/buy1_and_buynew/E0V1E.py
 
 ## Note：which loss function to hyper this strategy is up to you. It's not set in stone
 
