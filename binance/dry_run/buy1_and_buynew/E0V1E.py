@@ -72,12 +72,11 @@ class E0V1E(IStrategy):
             if "buy_new" in str(trade.enter_tag) and current_profit >= 0.03:
                 return -0.002
 
-        return None
+        return self.stoploss
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         # 清除已平仓交易对的状态
-
         active_pairs = [metadata['pair']]
         for pair in list(self.fastk_states.keys()):
             if pair not in active_pairs:
@@ -86,6 +85,7 @@ class E0V1E(IStrategy):
         for pair in list(self.cci_states.keys()):
             if pair not in active_pairs:
                 del self.cci_states[pair]
+                
         # buy_1 indicators
         dataframe['sma_15'] = ta.SMA(dataframe, timeperiod=15)
         dataframe['cti'] = pta.cti(dataframe["close"], length=20)
@@ -145,26 +145,22 @@ class E0V1E(IStrategy):
         if pair not in self.cci_states:
             self.cci_states[pair] = {
                 'cci_triggered': False,
-                'trigger_candle': None,
                 'consecutive_red': 0
             }
 
         if current_profit > 0:
             # 当首次触发条件时记录峰值
-
             if current_candle["fastk"] > self.sell_fastx.value:
-
                 if not self.fastk_states[pair]['triggered']:
-
                     self.fastk_states[pair]['peak_value'] = current_candle["fastk"]
                     self.fastk_states[pair]['triggered'] = True
-                # 已触发条件后检查下降
-                elif self.fastk_states[pair]['triggered']:
-                    if current_candle["fastk"] < (
-                            self.fastk_states[pair]['peak_value'] * self.sell_fastk_retracement.value):
-                        self.fastk_states[pair] = {'triggered': False, 'peak_value': 0}  # 重置状态
-
-                        return "fastk_profit_delay_sell"
+                    
+        # 已触发条件后检查下降
+        if self.fastk_states[pair]['triggered']:
+            if current_candle["fastk"] < (self.fastk_states[pair]['peak_value'] * self.sell_fastk_retracement.value):
+                
+                self.fastk_states[pair] = {'triggered': False, 'peak_value': 0}  # 重置状态
+                return "fastk_profit_delay_sell"
 
         if current_profit > -0.03:
             if current_candle["cci"] > 80:
@@ -172,39 +168,39 @@ class E0V1E(IStrategy):
                 if not self.cci_states[pair]['cci_triggered']:
                     self.cci_states[pair] = {
                         'cci_triggered': True,
-                        'trigger_candle': current_candle.copy(),
                         'consecutive_red': 0
                     }
-                if self.cci_states[pair]['cci_triggered']:
+        
+        if self.cci_states[pair]['cci_triggered']:
 
-                    is_red_candle = current_candle['close'] < current_candle['open']
+            is_red_candle = current_candle['close'] < current_candle['open']
 
-                    # 更新连续阴线计数
-                    if is_red_candle:
-                        self.cci_states[pair]['consecutive_red'] += 1
-                    else:
-                        self.cci_states[pair]['consecutive_red'] = 0  # 阳线则重置
+            # 更新连续阴线计数
+            if is_red_candle:
+                self.cci_states[pair]['consecutive_red'] += 1
+            else:
+                self.cci_states[pair]['consecutive_red'] = 0  # 阳线则重置
 
-                    open_price = current_candle['open']
-                    close_price = current_candle['close']
-                    price_drop_pct = (open_price - close_price) / open_price
+            open_price = current_candle['open']
+            close_price = current_candle['close']
+            price_drop_pct = (open_price - close_price) / open_price
 
-                    sell_condition = (
-                        # 条件1: 单根阴线跌幅达标
-                            (price_drop_pct >= self.min_redline_pct.value) |
-                            # 条件2: 连续两根阴线（无论跌幅）
-                            (self.cci_states[pair]['consecutive_red'] >= 2)
-                    )
+            sell_condition = (
+                    # 条件1: 单根阴线跌幅达标
+                    (price_drop_pct >= self.min_redline_pct.value) |
+                    # 条件2: 连续两根阴线（无论跌幅）
+                    (self.cci_states[pair]['consecutive_red'] >= 2)
+            )
 
 
-                    if is_red_candle and sell_condition:
-                        self.cci_states[pair] = {'cci_triggered': False, 'trigger_candle': None, 'consecutive_red': 0}
+            if is_red_candle and sell_condition:
+                self.cci_states[pair] = {'cci_triggered': False, 'consecutive_red': 0}
+                return "cci_loss_sell_delay"
 
-                        return "cci_loss_sell_delay"  # 修改退出标签以区分
+            if current_profit < self.max_allowed_drawdown.value:
+                self.cci_states[pair] = {'cci_triggered': False, 'consecutive_red': 0}
+                return "cci_emergency_sell"
 
-                    if current_profit < self.max_allowed_drawdown.value:
-                        self.cci_states[pair] = {'cci_triggered': False, 'trigger_candle': None, 'consecutive_red': 0}
-                        return "cci_emergency_sell"
 
         if current_time - timedelta(hours=7) > trade.open_date_utc:
             if current_profit >= -0.05:
