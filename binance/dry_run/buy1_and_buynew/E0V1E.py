@@ -17,7 +17,7 @@ class E0V1E(IStrategy):
     }
     timeframe = '5m'
     process_only_new_candles = True
-    startup_candle_count = 240
+    startup_candle_count = 20
     order_types = {
         'entry': 'market',
         'exit': 'market',
@@ -31,12 +31,12 @@ class E0V1E(IStrategy):
     }
 
     stoploss = -0.25
-    trailing_stop = False
+    trailing_stop = True
     trailing_stop_positive = 0.002
-    trailing_stop_positive_offset = 0.05
+    trailing_stop_positive_offset = 0.03
     trailing_only_offset_is_reached = True
 
-    use_custom_stoploss = True
+    use_custom_stoploss = False
 
     is_optimize_32 = True
     buy_rsi_fast_32 = IntParameter(20, 70, default=40, space='buy', optimize=is_optimize_32)
@@ -45,10 +45,6 @@ class E0V1E(IStrategy):
     buy_cti_32 = DecimalParameter(-1, 1, default=0.69, decimals=2, space='buy', optimize=is_optimize_32)
 
     sell_fastx = IntParameter(50, 100, default=84, space='sell', optimize=True)
-
-    cci_opt = False
-    sell_loss_cci = IntParameter(low=0, high=600, default=120, space='sell', optimize=cci_opt)
-    sell_loss_cci_profit = DecimalParameter(-0.15, 0, default=-0.05, decimals=2, space='sell', optimize=cci_opt)
 
     @property
     def protections(self):
@@ -59,17 +55,7 @@ class E0V1E(IStrategy):
                 "stop_duration_candles": 96
                 }
                ]
-
-    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
-                        current_rate: float, current_profit: float, **kwargs) -> float:
-
-        if current_profit >= 0.05:
-            return -0.003
-            
-        if "buy_new" in str(trade.enter_tag) and current_profit >= 0.03:
-            return -0.002
-
-        return None
+        
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # buy_1 indicators
         dataframe['sma_15'] = ta.SMA(dataframe, timeperiod=15)
@@ -83,9 +69,6 @@ class E0V1E(IStrategy):
         dataframe['fastk'] = stoch_fast['fastk']
 
         dataframe['cci'] = ta.CCI(dataframe, timeperiod=20)
-
-        dataframe['ma120'] = ta.MA(dataframe, timeperiod=120)
-        dataframe['ma240'] = ta.MA(dataframe, timeperiod=240)
 
         return dataframe
 
@@ -135,14 +118,6 @@ class E0V1E(IStrategy):
         if current_profit > -0.03:
             if current_candle["cci"] > 80:
                 return "cci_loss_sell"
-
-        if current_time - timedelta(hours=7) > trade.open_date_utc:
-            if current_profit >= -0.05:
-                return "time_loss_sell_7_5"
-
-        if current_time - timedelta(hours=10) > trade.open_date_utc:
-            if current_profit >= -0.1:
-                return "time_loss_sell_10_10"
 
         return None
 
