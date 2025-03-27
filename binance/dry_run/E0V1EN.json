@@ -1,0 +1,36 @@
+{
+  "strategy_name": "E0V1EN",
+  "params": {
+    "roi": {
+      "0": 1
+    },
+    "stoploss": {
+      "stoploss": -0.25
+    },
+    "trailing": {
+      "trailing_stop": true,
+      "trailing_stop_positive": 0.002,
+      "trailing_stop_positive_offset": 0.03,
+      "trailing_only_offset_is_reached": true
+    },
+    "max_open_trades": {
+      "max_open_trades": 2
+    },
+    "buy": {
+      "buy_cti_32": 0.69,
+      "buy_rsi_32": 42,
+      "buy_rsi_fast_32": 40,
+      "buy_sma15_32": 0.973,
+      "buy_24h_max_pct": 24.3,
+      "buy_24h_max_pct1": 122.9,
+      "buy_24h_min_pct": -24.3,
+      "buy_24h_min_pct1": -25.8
+    },
+    "sell": {
+      "sell_fastx": 84
+    },
+    "protection": {}
+  },
+  "ft_stratparam_v": 1,
+  "export_time": "2025-03-27 18:09:03.272081+00:00"
+}
