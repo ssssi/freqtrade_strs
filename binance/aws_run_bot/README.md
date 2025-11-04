@@ -43,4 +43,4 @@ docker-compose pull
 docker-compose run --rm freqtrade create-userdir --userdir user_data
 
 ### Create user directory structure
-docker-compose run up -d
+docker-compose up -d
