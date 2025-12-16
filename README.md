@@ -48,7 +48,7 @@ If you find this repository useful and want to support me, you can donate to the
 
 ## Referral links
 
-- [Binance](https://accounts.marketwebb.blue/register?ref=77199030)
+- [Binance](https://accounts.maxweb.cab/zh-CN/register?ref=77199030)
 
 if you have any question you can contact me in discord:@E0V1E or @evilzzq
 
